@@ -1,0 +1,36 @@
+void printsegaddress()
+
+Current: etext[0x0000e001]=0x00000000, edata[0x00010aaa]=0x00000000, ebss[0x00010000]=0x00000000
+Preceding: etext[0x0000e002]=0x12345678, edata[0x00020bbb]=0x12345678, ebss[0x00020000]=0x12345678
+After: etext[0x0000e003]=0xffffffff, edata[0x00030ccc]=0xffffffff, ebss[0x00030000]=0xffffffff
+
+void printtos()
+Before[0x00000000]: 0x00000000
+After [0x00111111]: 0x00ffffff
+	element[0x00ffffff]: 0x00000003
+	element[0x00ffffff]: 0x00000002
+	element[0x00ffffff]: 0x00000001
+	element[0x00ffffff]: 0x00000000
+
+void printprocstks(int priority)
+Process [proc A]
+	pid: 11
+	priority: 40
+	base: 0x00ff0ff0
+	limit: 0x00ffffff
+	len: 1024
+	pointer: 0x 00ffff22
+Process [main]
+	pid: 10
+	priority: 20
+	base: 0x00ff0ff0
+	limit: 0x00ffffff
+	len: 4096
+	pointer: 0x 00ffff33
+
+void printsyscallsummary()
+Process [pid:20]
+        Syscall: sys_scount, count: 2, average execution time: 0 (ms)
+Process [pid:0]
+	Syscall: sys_signal, count: 5, average execution time: 0 (ms)
+	Syscall: sys_wait, count: 4, average execution time: 0 (ms)
