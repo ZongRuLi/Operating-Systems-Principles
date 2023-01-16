@@ -67,7 +67,7 @@ SYSOBJ = ${SYS:%.c=%.o}
 
 TTYOBJ = ${TTY:%.c=%.o}
 
-XOBJ = startup.o initialize.o intr.o clkint.o ctxsw.o
+XOBJ = startup.o initialize.o intr.o clkint.o ctxsw.o zfunction.o
 
 OBJ =	${COMOBJ} ${MONOBJ} ${SYSOBJ} ${TTYOBJ}		\
 	moncksum.o monclkint.o comint.o ethint.o montftp.o
@@ -169,6 +169,9 @@ comint.o: ../com/comint.S
 initialize.o: $(OBJ) startup.o 
 	sh mkvers.sh
 	${CC} -c ${CFLAGS} -DVERSION=\""`cat version`"\" ../sys/initialize.c
+
+zfunction.o: ../sys/zfunction.S
+	${CPP} ${SDEFS} ../sys/zfunction.S | ${AS} ${ASFLAGS} -o zfunction.o
 
 ${MONOBJ}:
 	 ${CC} ${CFLAGS} ../mon/`basename $@ .o`.[c]
