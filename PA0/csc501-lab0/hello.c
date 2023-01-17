@@ -4,7 +4,8 @@ long zfunction(long para);
 
 
 int main(void) {
-    printf("zfunction(0xaabbccdd)=%lx\n",zfunction(0xaabbccdd));
+	long x=0xaabbccdd;
+    printf("zfunction(0xaabbccdd)=%lx\n",zfunction(x));
     return 0;
 }
 
