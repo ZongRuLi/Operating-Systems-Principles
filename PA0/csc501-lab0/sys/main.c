@@ -18,6 +18,7 @@ int main()
 	else
 		kprintf("[ERROR] zfunction test fail!\n");
 
-
+	printsegaddress();
+	printtos();
 	return 0;
 }
