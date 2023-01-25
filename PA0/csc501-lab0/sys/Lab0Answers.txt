@@ -1,0 +1,91 @@
+1. Assuming the XINU text begins at address 0x0, draw a rough diagram of XINU’s memory layout with addresses derived from your experimental measurements. Include the information you uncovered from running your version of printsegaddress() and printprocstks().
+
+0x00ffeff8	+-----------------------+ <--------- BASE MAIN
+		|			|	____ LIMIT MAIN
+0x00ffdffc---	|	  MAIN		| <----/
+0x00ffcffc   \->+-----------------------+ <--------- BASE  PROC A
+		|	PROC A 		|
+		|			|
+0x00ffdff8	+-----------------------+ <--------- LIMIT PROC A
+		|	FREE MEM	| 
+		+-----------------------+
+		| 	  HEAP		|
+0x00028f18	+-----------------------+
+		|	BSS  SEG	|
+0x00020769	+-----------------------+
+		|	DATA SEG	|
+0x0001bd8b	+-----------------------+
+		|	TEXT SEG	|	
+0x00000000	+-----------------------+
+
+2. What is the difference in stack top address before and after calling printtos() ? Draw a diagram to illustrate what are the contents of the items pushed into the stack between these two time points.
+
+(1) before calling printtos():
+
+high address	+-----------------------+
+		|   LOCAL main()	| <-- local variable in previous function stack
+		+-----------------------+
+0xffefc0	|   LOCAL main()	| <-- current ESP (current stack top)  
+low address	+-----------------------+
+
+(2) after calling printtos():
+
+high address	+-----------------------+
+		|   LOCAL main()	| <-- local variable of previous function stack
+		+-----------------------+
+0xffefc0	|   LOCAL main()	| <-- previous ESP
+		+-----------------------+
+didn't see	| ~~~~PARAMETERS~~~~~~~	| <-- input parameters for printtos (if function have any parameters, for printtos(), it doesn't has paramter, thus program will not push params into stack)
+		+-----------------------+
+0xffefbc	| RETURN ADDRESS	| <-- return address
+		+-----------------------+
+0xffefb8	| EBP printtos()	| <-- EBP 
+		+-----------------------+
+		| LOCAL printtos()	| <-- local variable in printtos() function
+		+-----------------------+
+		| LOCAL printtos()	| <-- current ESP
+low address	+-----------------------+
+
+
+3. Which byte order is adopted in the host machine that we are using ? How did you find out ?
+
+Little-Endian. I use a unsigned int pointer print out a variable and then use four char pointer print out each bytes when I increase address by 1.
+Here's the print out information looks like:
+
+	(unsigned int*) 0x00 --> 0xaabbccdd
+	(char*)		0x00 --> 0xdd
+	(char*)		0x01 --> 0xcc
+	(char*)		0x02 --> 0xbb
+	(char*)		0x03 --> 0xaa
+
+Memory content:	
+	0x03	0x02	0x01	0x00
+	aa	bb	cc	dd
+
+32 bit value on Little-Endian:
+	0xaabbccdd
+
+In fact, Intel processor use Little-Endian. We can check processor information by command "cat /proc/cpuinfo".
+
+4. Briefly describe the mov, push, pusha, pop, and popa instructions in the x86.
+
+mov src, dst 	// move src to dst
+push src 	// copy specified word to top of stack, and then decrease stack pointer(esp) address by 4.
+
+pusha		// copy all registers to stack
+
+pop dst		// copy word from top of stack to specified location, and increase ESP address by 4.
+
+popa		// copy words from stack to all registers
+
+5. In a stack frame, local variables are stored below the top of the stack. In task 3, does your result show all the local variables declared in your printtos function? If not, can you explain that? (hint: try to disable the compiler optimization by specifying -O0 in your Makefile)
+
+I checked the output of "objdump -d printtos.o" and see
+
+> push %ebp
+> mov %esp, %ebp
+> sub %0x28, %esp 
+
+Apperantly, it decrease esp for 0x28(decimal 40), which is space for ten 4 byte local variables. The answer is yes. I think it preserve enough space for all local variable. Ten variables are too much for which printtos function need. This might cause by disable of compiler optiimiization.
+
+
