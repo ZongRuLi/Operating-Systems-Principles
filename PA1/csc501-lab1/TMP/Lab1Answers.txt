@@ -1,0 +1,79 @@
+1. What are the advantages and disadvantages of each of the two scheduling policies? Also, give the advantages and disadvantages of the round robin scheduling policy originally implemented in Xinu.
+
+
+(1) xinu priority scheduler:
+advantages: 
+	1. high priority process have short waiting time. 
+	2. most simple to implement amoung three schedulers.
+disadvantages: 
+	1. low priority proceses have long waiting time. 
+	2. might has starvation problem. If there are endless high priority process been created. low riority process will never been scheduled.
+
+(2) Aging scheduler:
+advantages: 
+	1. good fairness. never starvation.
+	2. still simple to implement, only add one more for loop than xinu default scheduler.
+disadvantages: 
+	1. longer average waiting time.
+	2. more content switch -> lower CPU utilization -> lower throughput.
+
+(3) Linux-Like scheduler:
+advantages:
+	1. never starvation.
+	2. good fairness regarding total execution time. High priority process has more execution time in each epoch. This make high priority process finish faster.
+	3. good fairness regarding unused execution time. It allow process to carry unused time quantum to next epoch.
+disadvantages: 
+	1. more comlex to implemnt, compare with other two scheduler.
+	2. more content switch + more computation each time scheduling -> lower CPU utilization -> lower throughput.
+	3. although it will never starvation, average waiting time for low priority process is very high.
+
+2. Describe when each of the schedulers run the NULL process.
+
+Note that NULL process's priority never change. assume process priority is never negative.
+
+(1) xinu priority scheduler: 
+	1. when all runnable processes have priority equals to zero. scheduler will round-robin schedule all processes.
+	2. only NULL process is runnable.
+
+(2) Aging scheduler:
+	1. when all runnable processes have priority equals to zero and NULL process is the first coming process(last one before the rdytail).
+	=> schedule NULL process to run. => scheduler aging priority of all other processes. => scheduler round robin schedule all process other than NULL process.
+	2. only NULL process is runnable.
+
+(3) Linux-Like scheduler:
+	1. when all runnable processes have priority equals to zero. scheduler will round-robin schedule all processes.
+	2. only NULL process is runnable.
+
+3. Give two suggestions how the above mentioned aging based scheduler could be changed to attain better fairness keeping the fundamental point of incrementing the priority to be the same in your new ideas.
+	1. increase priority base base on the subtraction between highest priority and it's priority.
+		Ex. aging ready processes' priority by formula: 
+			PRIORITY =  [ 0.5*( highest priority - PRIORITY ) + 1 ].
+		Let's assume Pn(priority) before schedule: 
+			current running: P1(100), ready: P2(50), P3(10)
+		1st call resched(): ready Pn(Prio) after aging:	
+			P2( 50 + 0.5*(100-50) + 1 ), P3( 10 + 0.5*(100-10) + 1 ) = P2(76), P3(56)
+		2nd call resched(): ready Pn(Prio) after aging:	
+			P2( 76 + 0.5*(100-76) + 1 ), P3( 56 + 0.5*(100-56) + 1 ) = P2(89), P3(79)
+		3rd call resched(): ready Pn(Prio) after aging:	
+			P2( 89 + 0.5*(100-89) + 1 ), P3( 79 + 0.5*(100-79) + 1 ) = P2(95), P3(90)
+		4th call resched(): ready Pn(Prio) after aging:	
+			P2( 95 + 0.5*(100-95) + 1 ), P3( 90 + 0.5*(100-90) + 1 ) = P2(98), P3(96)
+		5th call resched(): ready Pn(Prio) after aging:	
+			P2( 98 + 0.5*(100-98) + 1 ), P3( 96 + 0.5*(100-96) + 1 ) = P2(100), P3(99)
+
+		Faster to become the same prioriity. start round-robin like schedule.
+
+	2. increase priority base on accumulate waiting time. 
+		Ex. aging ready processes' priority by formula: 
+			PRIORITY =  [ PRIORITY + ( accumulate waiting time ) ].
+
+		Let's assume Pn(priority) before schedule: 
+			current running: P1(100), create & resume P3(0)(waiting time=1).
+		After 13 times call of resched():
+			P3( 0 +1+2+3+4+5+6+7+8+9+10+11+12+13 ) = P3(91)
+			current running: P1(100), ready: P2(91)(waiting time=14)
+		ready Pn(Prio) after aging:	
+			P2(91 + 14) = P2(105)
+			current running: P2(105), ready: P1(100)(waiting time=1)
+	
+		Faster to become the same prioriity. start round-robin like schedule.
