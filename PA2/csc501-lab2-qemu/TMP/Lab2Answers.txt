@@ -1,0 +1,89 @@
+1.1
+
+Priority inversion problem could be solved with 4 types of Resource access protocols: 
+1. NPP(Non Preemption Protocol)
+2. BIP(Basic Priority Inheritance Protocol)
+3. HLP(Highest Locker's Priority Protocol/Immediate Ceiling Priority Protocol)
+4. PCP(Priority Ceiling Protocol/Original Ceiling Priority Protocol)
+
+NPP:	when a process aquired a resource successfully, it will be assigned the highest 
+priority amoung the system and block all other processes. When a process release a resource,
+it's priority resume back to its original priority.
+pros: 1. simple 2. deadlock free
+cons: only works for one resource
+
+BIP:	the same as PA2's priority inheritance protocol.
+
+HLP:	define the ceiling C(S) of a semaphore S to be the highest priority of all tasks 
+that use S during execution. Note that C(S) can be calculated statically (off-line). 
+When a process aquired sem S successfully, its priority raises to Max{original prio, C(S)}
+When a process release sem S, its priority resume back to its original priority. 
+
+PCP:	combine HLP & BIP. 
+1. Assume that S is the semaphore with highest ceiling locked by other tasks currently: 
+C(S) is ”the current system priority”. 
+2. If A wants to lock a semaphore (not necessarily S), it must have a strictly higher priority 
+than C(S) i.e. P(A) > C(S). Otherwise A is blocked, and it transmitts its priority to 
+the task currently holding S.
+
+1.2
+
+When priority inversion occurs, low priority semaphore/lock holder is ready but 
+got preempted by other higher priority non-blocked process. Other process might running
+for a long time and let low priority semaphore/lock holder and highest priority blocked 
+process wait for a long time.
+
+In the original XINU implementation, appearantly it didn't deal with priority inversion 
+problem. It let low priority semaphore holder keep waiting untill other higher priority
+non-blocked process finished.
+
+/*----------------------------------Test XINU semaphore---------------------------*/
+/*
+ * Result of priority inversion:
+ * 
+ * priority: A > B > C, Note: * means blocked
+ * 
+ * proc A	    L *             R R
+ * proc B             L L ... L L
+ * proc C	L R  		  R
+ * output	C C A B B ... B B C A A 
+ * 
+ * */
+
+In the reader/writer lock implementation, we implement priority inheritance protocol.
+When high priority process is blocked by low priority lock holder process, we dynamicly 
+increase the priority of lock holder process and prevent it been preempted by other 
+non-blocked high priority process. Thus, Low priority lock holder release resource eariler 
+and blocked high priority process got resource earilier. In conclusion, we solve priority
+inversion problem.
+
+/*----------------------------------Test reader/writer lock---------------------------*/
+/*
+ * Result of priority inversion:
+ * 
+ * priority: A > B > C, Note: * means blocked
+ *
+ * proc A	    L * R R
+ * proc B                   L L ... L L
+ * proc C	L R   R	  
+ * output	C C A C A A B B ... B B 
+ * 
+ * */
+
+2. 
+
+First problem: priority inversion
+(1). Consider a senario: readerA(prio=30), readerB(prio=15), writerC(prio=20).
+(2). At beginning, readerA is access resource. then writerC wants to access but been blocked.
+(3). readerB wants to access resource and been granted.
+(4). readerA finish and release resource. However readerB is still accessing resource.
+(5). Now, writerC is blocked by a low priority reader process. priority inversion occur.
+// Note: if using priority inheritance, step 3 readerB will not be granted.
+
+Second problem: unbounded waiting time:
+(1). Consider a senario: readerA(prio=20), readerB(prio=20), writerC(prio=20).
+(2). If readerA and readerB repeatly access resource, writerC will waiting forever.
+Kernel needs consider waiting time when it grants acquisition request. 
+For example, kernel grants the request with maximum waiting time.
+
+
