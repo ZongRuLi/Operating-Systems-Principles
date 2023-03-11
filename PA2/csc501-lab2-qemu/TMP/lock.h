@@ -59,8 +59,6 @@ extern unsigned long ctr1000;
 extern int lock (int ldes, int type, int priority);
 extern void linit();
 
-extern int GDB;
-
 #define wisempty(lid)	( locktab[lid].wq[ locktab[lid].wqhead ].qnext >= NPROC )
 #define wnonempty(lid)	( locktab[lid].wq[ locktab[lid].wqhead ].qnext < NPROC )
 

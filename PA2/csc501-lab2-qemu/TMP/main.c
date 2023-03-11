@@ -1159,34 +1159,34 @@ int main( )
          * You need to read the PA2 instruction carefully.
          */
 	// Test 7: lock allocation overflow test
-	//test7();
+	test7();
         // Test 8: acquried deleted locks. Expected return SYSERR
-	//test8();
+	test8();
 	// Test 9: acquried deleted and renewed locks. Expected return SYSERR
-	//test9();
+	test9();
 	// Test 10: wait on lock and lock been deleted. wait Expected return DELETED, 
 	// release deleted lock, Expect return SYSERR.
-	//test10();
-	//test1();
-	//test2();
+	test10();
+	test1();
+	test2();
 	// Test 4: wait on locks with same priority but write wait time less than 500 ms. 
 	// Expected order of lock acquisition is: reader A, reader B, writer C
-	//test4();
+	test4();
 	// Test 5: wait on locks with same priority, write wait time longer than 500 ms and longer than read wait time. 
 	// Expected order of lock acquisition is: reader A, reader B, writer C
-	//test5();
+	test5();
 	// Test 6: wait on locks with same priority, write wait time longer than 500 ms but less than read wait time. 
 	// Expected order of lock acquisition is: writer D, reader B, writer C
-	//test6();
-	//test3();
-	//test11();
-	//test12();
-	//test13();
+	test6();
+	test3();
+	test11();
+	test12();
+	test13();
 	
-	//test14();
-	//test15();
-	//test16();
-	//test17();
+	test14();
+	test15();
+	test16();
+	test17();
 	task1();
 
 	if(failcount == 0)
