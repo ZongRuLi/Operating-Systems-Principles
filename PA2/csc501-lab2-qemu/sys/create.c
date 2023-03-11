@@ -66,6 +66,12 @@ SYSCALL create(procaddr,ssize,priority,name,nargs,args)
 	pptr->pirmask[0] = 0;
 	pptr->pnxtkin = BADPID;
 	pptr->pdevs[0] = pptr->pdevs[1] = pptr->ppagedev = BADDEV;
+	/* PA 2*/
+	pptr->porgprio = priority;	/* origin priority */
+	for(i=0; i<NLOCKS; i++)
+		pptr->pholdlock[i] = 0;	/* all locks hold by this proc	*/
+	pptr->pwaitlock = BADPID;		/* the lock this proc is waiting on	*/
+	pptr->pwaitlockstartime=0;		/* the time begin waiting for the lock */
 
 		/* Bottom of stack */
 	*saddr = MAGIC;

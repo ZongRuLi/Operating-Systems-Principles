@@ -13,6 +13,9 @@
 #include <q.h>
 #include <io.h>
 #include <stdio.h>
+/* PA2 */
+#include <math.h>
+#include <lock.h>
 
 /*#define DETAIL */
 #define HOLESIZE	(600)	
@@ -48,6 +51,13 @@ int	console_dev;		/* console device			*/
 
 int	rdyhead, rdytail;	/* head/tail of ready list (q indicies)	*/
 char	vers[100];		/* Xinu version printed at startup	*/
+
+/* PA2 */
+struct	lentry locktab[NLOCKS];	/* lock table */
+int	nextlock;
+int 	LIDBITS;		/* bit width of lock id */
+int	locktoken;
+int	GDB;
 
 /************************************************************************/
 /***				NOTE:				      ***/
@@ -197,6 +207,13 @@ LOCAL int sysinit()
 	    init_dev(i);
 	}
 #endif
+	
+	/* PA2 */
+	LIDBITS = clog2((unsigned long long) (NLOCKS-1));
+	linit();
+	for (i=0 ; i<NPROC ; i++)	/* initialize process table */
+		for(j=0; j<NLOCKS; j++)
+			proctab[i].pholdlock[j] = 0;
 
 	return(OK);
 }

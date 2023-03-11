@@ -37,6 +37,7 @@
 #define	BADPID		-1		/* used when invalid pid needed	*/
 
 #define	isbadpid(x)	(x<=0 || x>=NPROC)
+#define	isgoodpid(x)	(x> 0 || x< NPROC)
 
 /* process table entry */
 
@@ -60,6 +61,12 @@ struct	pentry	{
 	int	fildes[_NFILE];		/* file - device translation	*/
 	int	ppagedev;		/* pageing dgram device		*/
 	int	pwaitret;
+
+	/* PA2 */
+	int	porgprio;		/* origin priority */
+	Bool	pholdlock[NLOCKS];	/* all locks hold by this proc	*/
+	int	pwaitlock;		/* the lock this proc is waiting on	*/
+	int	pwaitlockstartime;		/* the time begin waiting for the lock */
 };
 
 
