@@ -3,6 +3,7 @@
 #include <conf.h>
 #include <kernel.h>
 #include <proc.h>
+#include <q.h>
 #include <stdio.h>
 #include <lock.h>
 
@@ -1086,7 +1087,7 @@ void test17 ()
         int     rd1, rd2;
         int     wr1, wr2;
 
-        kprintf("\nTest 17: test the pinh affect by chprio(), proc A hold lock 1, proc B hold lock 2.\n"
+        kprintf("\nTest 17: test the priority affect by pinh & chprio(), proc A hold lock 1, proc B hold lock 2.\n"
 		       " And then proc A acquire lock 2 and wait on proc B.\n"
 		       " And then proc C acquire lock 1 and wait on proc A.\n"
 		       " relationship before kill: proc C -> proc A -> proc B\n");
@@ -1146,6 +1147,115 @@ void test17 ()
 	ldelete(lck1);
 	ldelete(lck2);
 }
+/*----------------------------------Test 18---------------------------*/
+char output18[20];
+int count18;
+void reader18 (char msg, int lck)
+{
+        int     ret;
+
+        kprintf ("  %c: to acquire lock\n", msg);
+        lock (lck, READ, DEFAULT_LOCK_PRIO);
+        output18[count18++]=msg;
+        kprintf ("  %c: acquired lock\n", msg);
+        kprintf ("  %c: to release lock\n", msg);
+        releaseall (1, lck);
+}
+
+void writer18 (char msg, int lck)
+{
+        kprintf ("  %c: to acquire lock \n", msg);
+        lock (lck, WRITE, DEFAULT_LOCK_PRIO);
+        output18[count18++]=msg; 
+        kprintf ("  %c: acquired lock, sleep 5s\n", msg);
+	
+	sleep (4);
+	output18[count18++]=msg;
+	sleep (2);
+        output18[count18++]=msg;
+	kprintf ("  %c: to release lock\n", msg);
+        releaseall (1, lck);
+}
+void proc18(char msg)
+{
+	sleep (2);
+	kprintf ("  %c: running \n",msg);
+        output18[count18++]=msg;
+	sleep (2);
+	kprintf ("  %c: running \n",msg);
+        output18[count18++]=msg;
+}
+
+void test18 ()
+{
+	count18=0;
+        int     lck;
+        int     rd1, rd2;
+        int     wr1, wr2;
+	int	pid, pid2, pid3;
+
+        kprintf("\nTest 18: test the pinh, proc A hold lock 1, chprio should affect ready queue order!\n"
+		       " Expect proc A got resched with higher priority when proc A is in ready queue.\n");
+        lck  = lcreate ();
+        assert (lck != SYSERR, "Test 18 failed");
+
+        rd1 = create(reader18, 2000, 15, "reader C", 2, 'C', lck);
+        wr1 = create(writer18, 2000, 5, "writer B", 2, 'B', lck);
+        pid = create(proc18, 2000, 10, "proc A", 1, 'A');
+        //pid2 = create(proc18, 2000, 10, "proc A", 1, 'A');
+
+        kprintf("-start writer A, then sleep 3s. lock 1 & lock2 granted to write A (prio 20)\n");
+        resume(wr1);
+	kprintf("-M sleep 2s, Expect: A -> B -> sleep -> M\n");
+        sleep (1);
+
+	kprintf("-Expect: C (15, blocked, increase B's pprio)\n");
+	resume(rd1);
+	resume(pid);
+        sleep (1);
+
+	kprintf("-wait B & A become ready\n");
+
+	int	i;
+	while( 1 ){
+		for(i=0 ;i<1000; i++)
+			;
+		if( proctab[wr1].pstate == PRREADY && proctab[pid].pstate == PRREADY )
+			break;
+	}
+	kprintf("-A & B are ready, C is blocked. M sleep 1s, Expect B(15) -> A(10) \n");
+       	//"	-> -B(5->15) -> C(15) -> A(10) \n");
+	assert (getprio(wr1) == 15, "Test 18 failed, proc A !=15");
+	sleep (1);
+	while( 1 ){
+		for(i=0 ;i<1000; i++)
+			;
+		if( proctab[wr1].pstate == PRREADY && proctab[pid].pstate == PRREADY )
+			break;
+	}
+
+	kprintf("-A & B are ready, change priority of proc C (15->3), \n-Expect ready order: proc B (5) <- proc A (10) <- <- rdytail \n");
+	chprio (rd1, 3);
+	assert (getprio(rd1) == 3, "Test 18 failed, proc C !=18");
+	assert (getprio(wr1) == 5, "Test 18 failed, proc B !=5");
+	assert ( q[rdytail].qprev == pid, "Test 18 failed, ready order is not: proc A -> rdytail \n" );
+	assert ( q[pid].qprev == wr1, "Test 18 failed, ready order is not: proc B -> proc A -> rdytail \n" );
+
+	kprintf("-A & B are ready, change priority of proc C (3->18), \n-Expect ready order: proc A (10) <- proc B(18) <- rdytail \n");
+	chprio (rd1, 18);
+	assert (getprio(rd1) == 18, "Test 18 failed, proc C !=18");
+	assert (getprio(wr1) == 18, "Test 18 failed, proc B !=18");
+	assert ( q[rdytail].qprev == wr1, "Test 18 failed, ready order is not: proc B -> rdytail \n" );
+	assert ( q[wr1].qprev == pid, "Test 18 failed, ready order is not: proc A -> proc B -> rdytail \n" );
+
+	kprintf("-proc A, B is ready M sleep 5s, Expect C(15) -> A(10) -> B(5) \n");
+	sleep (5);
+        
+	kprintf("output=%s\n", output18);
+        assert(mystrncmp(output18,"BBABCA",5)==0,"Test 18 FAILED\n");
+        kprintf ("Test 18 OK\n");
+	ldelete(lck);
+}
 /*------------------------------------------------------------------------
  *  main  --  user main program
  *------------------------------------------------------------------------
@@ -1187,6 +1297,7 @@ int main( )
 	test15();
 	test16();
 	test17();
+	test18();
 	task1();
 
 	if(failcount == 0)
