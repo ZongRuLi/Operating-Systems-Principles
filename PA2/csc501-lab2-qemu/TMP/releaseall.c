@@ -19,6 +19,7 @@ SYSCALL releaseall(nargs,args)
 	int	i, lid, release_failed=0;
 	disable(ps);
 
+	kprintf("-releaseall: ctr1000 = %d ms\n",ctr1000);
 	a = (unsigned long *)(&args) + (nargs-1); /* last argument	*/
 	for( i=nargs ; i > 0 ; i-- ){
 		ldes = *a--;
@@ -76,7 +77,7 @@ void release_one_lock(int lid){
 	}
 
 	if( only_write_proc_waiting ){
-		proc_acquire_lock(lid, wpid);
+		proc_acquire_lock(lid, wpid, WRITE);
 		return;
 	}
 
@@ -84,7 +85,7 @@ void release_one_lock(int lid){
 		// put all read proc in ready queue.
 		int pid;
 		while( (pid = wgetlast(lid, lptr->wqtail) ) != EMPTY ){
-			proc_acquire_lock(lid, pid);
+			proc_acquire_lock(lid, pid, READ);
 		}
 		return;
 	}
@@ -95,7 +96,7 @@ void release_one_lock(int lid){
 // the lock should be next given to a process having the 
 // highest lock priority for the lock.
 	if( wpprio > rpprio ){
-		proc_acquire_lock(lid, wpid);
+		proc_acquire_lock(lid, wpid, WRITE);
 		return;	
 	}
 	if( wpprio < rpprio ){
@@ -106,7 +107,7 @@ void release_one_lock(int lid){
 		{
 			if( lptr->wq[pid].qkey <= wpprio )
 				break;
-			proc_acquire_lock(lid, pid);
+			proc_acquire_lock(lid, pid, READ);
 		}
 		return;
 	}
@@ -129,27 +130,28 @@ void release_one_lock(int lid){
 	int	write_wait_less_than_500ms = ( write_wait_time < 500 );
 	int	read_wait_longer_than_write = write_wait_time < read_wait_time; 
 
-	/*
+	
 	if(write_wait_less_than_500ms ){
-		kprintf(" write wait less than 500 ms (%d)ms\n", write_wait_time);
+		kprintf("-releaseall: write wait less than 500 ms (%d)ms\n", write_wait_time);
 	} else {
-		kprintf(" write wait time (%d)ms\n", write_wait_time);
-		kprintf(" read wait time (%d)ms\n", read_wait_time);
+		kprintf("-releaseall: write wait time (%d)ms\n", write_wait_time);
+		kprintf("-releaseall: read wait time (%d)ms\n", read_wait_time);
 	}
-	*/
+	
 
 	if( write_wait_less_than_500ms || read_wait_longer_than_write ){
-		proc_acquire_lock(lid, rpid);
+		proc_acquire_lock(lid, rpid, READ);
 	}else{
-		proc_acquire_lock(lid, wpid);
+		proc_acquire_lock(lid, wpid, WRITE);
 	}
 
 	return;
 }
 
-void proc_acquire_lock(int lid, int pid)
+void proc_acquire_lock(int lid, int pid, int type)
 {
 	proctab[pid].pwaitlock = BADLID;
+	locktab[lid].lstate = type;
 	wdequeue(lid, pid);
 	ready(pid, RESCHNO);
 	return;
