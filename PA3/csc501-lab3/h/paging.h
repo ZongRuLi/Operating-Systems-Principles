@@ -48,6 +48,7 @@ typedef struct{
   int bs_vpno;				/* starting virtual page number */
   int bs_npages;			/* number of pages in the store */
   int bs_sem;				/* semaphore mechanism ?	*/
+  int bs_private;			/* PRIVATE heap or PUBLIC */
 } bs_map_t;
 
 typedef struct{
@@ -75,19 +76,31 @@ SYSCALL write_bs(char *, bsd_t, int);
 #define NBPG		4096	/* number of bytes per page	*/
 #define FRAME0		1024	/* zero-th frame		*/
 #define NFRAMES 	1024	/* number of frames		*/
+#define NBSM	    16		/* number of backing stores	*/
+
+#define isbad_bsid(x) 			( x >= NBSM || x < 0 )
 
 #define BSM_UNMAPPED	0
-#define BSM_MAPPED	1
+#define BSM_MAPPED		1
+
+#define BSM_PUPLIC 		0
+#define BSM_PRIVATE 	1
 
 #define FRM_UNMAPPED	0
-#define FRM_MAPPED	1
+#define FRM_MAPPED		1
 
-#define FR_PAGE		0
-#define FR_TBL		1
-#define FR_DIR		2
+#define FR_PAGE			0
+#define FR_TBL			1
+#define FR_DIR			2
 
-#define SC 3
-#define FIFO 4
+#define SC 				3
+#define FIFO 			4
 
-#define BACKING_STORE_BASE	0x00800000
-#define BACKING_STORE_UNIT_SIZE 0x00100000
+#define BACKING_STORE_BASE		0x00800000
+#define BACKING_STORE_UNIT_SIZE 0x00080000
+#define BS_NPAGE_MAX 			(BACKING_STORE_UNIT_SIZE/NBPG) 	/* number of pages per backing store id. 0x80000/4096 =128 */
+
+#define isbad_npage(x) 			( x > BS_NPAGE_MAX || x <= 0 )
+
+extern const pt_t clear_pt_entry;
+extern const pd_t clear_pd_entry;

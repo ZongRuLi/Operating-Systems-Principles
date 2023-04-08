@@ -33,6 +33,11 @@ SYSCALL create(procaddr,ssize,priority,name,nargs,args)
 	unsigned long	*saddr;		/* stack address		*/
 	int		INITRET();
 
+	/* PA3 */
+	int		fid;
+	pd_t	*pd_entry;
+	/*******/
+
 	disable(ps);
 	if (ssize < MINSTK)
 		ssize = MINSTK;
@@ -95,6 +100,24 @@ SYSCALL create(procaddr,ssize,priority,name,nargs,args)
 	*--saddr = 0;		/* %esi */
 	*--saddr = 0;		/* %edi */
 	*pushsp = pptr->pesp = (unsigned long)saddr;
+
+	/* PA3 */
+	/* allocating first 4 global page directory entries  */
+	get_frm(&fid);
+	pd_entry = proctab[pid].pdbr = (fid + FRAME0) * NBPG;
+	frm_tab[fid].fr_status = FRM_MAPPED;
+	frm_tab[fid].fr_type = FR_DIR;
+	frm_tab[fid].fr_pid = pid;
+
+	for( i = 0 ; i < NFRAMES ; i++, pd_entry++ )
+	{
+		pd_entry->pd_write = 1;
+		if( i < 4 ){
+			pd_entry->pd_pres = 1;
+			pd_entry->pd_base = FRAME0 + i;
+		}
+	}
+	/*******/
 
 	restore(ps);
 
