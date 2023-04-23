@@ -139,11 +139,45 @@ setsegs()
 */
 	//maxaddr = (char *)( 1536 * NBPG - 1); /* 10M size */
 				 	      /* the top 10M is used for backing store */
-	maxaddr = (char *)( 2048 * NBPG - 1); /* 8M size */
+	maxaddr = (char *)( 1024 * NBPG - 1); /* 8M size */
 	/* A Xinu instance has 16 MB (4096 pages) of real memory in total. 
 	 * We reserve the top 8MB real memory as backing stores.
 	 */
-	// TBD: what is the meaning of maxaddr?
+/*
+ *
+ ———————————-------------------------
+ Virtual memory
+
+ (pages 4096 and beyond)
+
+ ———————————-------------------------
+ 16 Backing stores
+
+ (pages 2048 – 4095)
+ ———————————-------------------------
+ 1024 frames
+
+ (pages 1024 – 2047)
+ page 1027 (frame 3) global page table 3
+ page 1026 (frame 2) global page table 2
+ page 1025 (frame 1) global page table 1
+ page 1024 (frame 0) global page table 0
+ ———————————-------------------------	<--- set maxaddr here 
+ 1. “steal” physical memory frames 2048 – 4095 for backing store 
+ 2. “steal” physical memory frames 1024 – 2047 for frames (don't want process stacks interfere by frames operation)
+
+ Kernel Memory (pages 406 – 1023) 	<-- freemem
+
+ ———————————-------------------------
+ Kernel Memory(pages 160 – 405)  	<-- HOLES, can't use 
+
+ ———————————-------------------------
+ Kernel Memory (pages 25 – 159)	 	<-- freemem
+
+ ———————————-------------------------	<-- end
+ Xinu text, data, bss (pages 0 – 24)
+ ———————————-------------------------	<-- start
+ * */
 
 	psd = &gdt_copy[1];	/* kernel code segment */
 	np = ((int)&etext + NBPG-1) / NBPG;	/* # code pages */

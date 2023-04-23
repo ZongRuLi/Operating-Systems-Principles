@@ -4,8 +4,9 @@
 #include <kernel.h>
 #include <proc.h>
 #include <paging.h>
+#include <Debug.h>
 
-
+LOCAL int check_vp_no_overlap(int virtpage);
 /*-------------------------------------------------------------------------
  * xmmap - xmmap
  *-------------------------------------------------------------------------
@@ -13,38 +14,39 @@
  * (“backing store” here) of size npages pages to the virtual page virtpage. 
  * A process may call this multiple times to map data structures, code, etc.
  */
+/* This call simply creates an entry in the backing store mapping */
 SYSCALL xmmap(int virtpage, bsd_t source, int npages)
 {
 	//kprintf("xmmap - to be implemented!\n");
 	STATWORD ps;
-	int		fail;
 
 	disable(ps);
 
-	int		bs_is_unmapped 	= bsm_tab[source].bs_status == BSM_UNMAPPED;
-	int		bs_is_private	= bsm_tab[source].bs_private == BSM_PRIVATE;
-	int		bad_bs_id		= isbad_bsid((int)source);
-	int		bad_npage		= isbad_npage(npages);
-	int		illegal_virtpage = virtpage < 4096; // TBD: define VM base as 4096 
+	int		bad_bs_id				= isbad_bsid((int)source);
+	int		bad_npage				= isbad_npage(npages);
+	int		vp_in_physical 			= virtpage < 4096; // TBD: define VM base as 4096 
+	// DONE: should prevent virtpage inside vheap!!!
+	// TBD: how about no overlap with other files?
+	
+	int		bs_is_unmapped 			= bsm_tab[source].bs_status == BSM_UNMAPPED;
+	int		bs_map_to_vheap			= bsm_tab[source].bs_private == BSM_PRIVATE;
+	int		file_larger_than_bs		= bsm_tab[source].bs_npages_max < npages;
+	int		bs_already_open_files 	= bsm_tab[source].bs_vpno[currpid] != 0;
+	int		vp_overlapped			= check_vp_no_overlap( virtpage ) == SYSERR;
 
-	fail = bs_is_unmapped || bs_is_private || bad_bs_id || bad_npage || illegal_virtpage;
+	int		param_range_error 		= bad_bs_id || bad_npage || vp_in_physical || vp_overlapped;
+	int		bs_unavailable 			= bs_is_unmapped || bs_map_to_vheap || file_larger_than_bs || bs_already_open_files;
 
-	if(fail)
+	if( param_range_error || bs_unavailable )
 	{
   		restore(ps);
   		return SYSERR;
 	}
 
-	if( bsm_map(currpid, virtpage, source, npages) == SYSERR )
-	{
-  		restore(ps);
-  		return SYSERR;
-	}
+	bsm_map( currpid, virtpage, source, npages);
 
   	restore(ps);
   	return(OK);
-
-
 }
 
 
@@ -70,4 +72,36 @@ SYSCALL xmunmap(int virtpage)
 
   	restore(ps);
   	return(OK);
+}
+
+
+LOCAL int check_vp_no_overlap(int virtpage)
+{
+	struct	pentry	*pptr;
+	int				i;
+	int				proc_has_vheap;
+	int				virtpage_in_vheap; 
+	
+	pptr = &proctab[currpid];
+	
+	proc_has_vheap = !isbad_bsid(pptr->store);
+	virtpage_in_vheap = check_vp_in_range( virtpage, pptr->vhpno, pptr->vhpnpages ); 
+
+	if( proc_has_vheap && virtpage_in_vheap )
+		   return SYSERR;
+
+	for( i = 0 ; i < NBSM ; i++ )
+	{
+		if(bsm_tab[i].bs_pid[currpid] == 1 )
+		{
+			if( check_vp_in_range( virtpage, bsm_tab[i].bs_vpno[currpid], bsm_tab[i].bs_npages[currpid] ) )
+				return SYSERR;	
+		}
+	}
+	return OK;
+}
+
+int check_vp_in_range(int virtpage, int vpno, int npages)
+{
+	return ( (virtpage >= vpno) && (virtpage < (vpno + npages)) );
 }
