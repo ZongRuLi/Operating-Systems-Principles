@@ -37,7 +37,8 @@ TTY2		is tty		on HARDWARE
 
 #define	BYTE_ORDER	LITTLE_ENDIAN
 
-#define	NPROC	    50			/* number of user processes	*/
+#define	NPROC	50
+//#define	NPROC	    50			/* number of user processes	*/
 #define	NSEM	    100			/* number of semaphores		*/
 #define	MEMMARK				/* define if memory marking used*/
 #define	RTCLOCK				/* now have RTC support		*/

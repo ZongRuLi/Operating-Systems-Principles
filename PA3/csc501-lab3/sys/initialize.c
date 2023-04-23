@@ -11,14 +11,17 @@
 #include <q.h>
 #include <io.h>
 #include <paging.h>
+#include <fq.h>
+#include <Debug.h>
 
 /*#define DETAIL */
 #define HOLESIZE	(600)	
-#define	HOLESTART	(640 * 1024)
-#define	HOLEEND		((1024 + HOLESIZE) * 1024)  
+#define	HOLESTART	(640 * 1024)	/* 160 * 4096 */
+#define	HOLEEND		((1024 + HOLESIZE) * 1024)  /* 1624 * 1024 = 406 * 4096 */
 /* Extra 600 for bootp loading, and monitor */
 
 extern	int	main();	/* address of user's main prog	*/
+extern buguser();
 
 extern	int	start();
 
@@ -49,9 +52,13 @@ int	console_dev;		/* the console device			*/
 /*  added for the demand paging */
 int page_replace_policy = SC;
 /* PA3 */
-int prp_qhead = -1;
+int 	debugLevel = DBG_LV;
+int 	print_replace = 0;
+int		vcheckmem_bypass =0;
+
 bs_map_t bsm_tab[NBSM];
 fr_map_t frm_tab[NFRAMES];
+int		fid_global_pt[4];
 //pr_map_t prp_tab[NFRAMES];
 
 const pt_t clear_pt_entry = { 
@@ -112,26 +119,33 @@ nulluser()				/* babysit CPU when no one is home */
 		(unsigned long) maxaddr+1);
 #ifdef DETAIL	
 	kprintf("    %d", (unsigned long) 0);
-	kprintf(" to %d\n", (unsigned long) (maxaddr) );
+	kprintf(" to %d(pn %d)\n", (unsigned long) (maxaddr), (unsigned long) (maxaddr) >>12 );
 #endif	
 
 	kprintf("%d bytes Xinu code\n",
 		(unsigned long) ((unsigned long) &end - (unsigned long) start));
 #ifdef DETAIL	
-	kprintf("    %d", (unsigned long) start);
-	kprintf(" to %d\n", (unsigned long) &end );
+	kprintf("    %d(pn %d)", (unsigned long) start, (unsigned long) start >>12);
+	kprintf(" to %d(pn %d)\n", (unsigned long) &end, (unsigned long) &end >> 12 );
 #endif
 
 #ifdef DETAIL	
 	kprintf("%d bytes user stack/heap space\n",
 		(unsigned long) ((unsigned long) maxaddr - (unsigned long) &end));
-	kprintf("    %d", (unsigned long) &end);
-	kprintf(" to %d\n", (unsigned long) maxaddr);
+	kprintf("    %d(pn %d)", (unsigned long) &end, (unsigned long) &end >> 12);
+	kprintf(" to %d(pn %d)\n", (unsigned long) maxaddr, (unsigned long) maxaddr >> 12);
 #endif	
 	
 	kprintf("clock %sabled\n", clkruns == 1?"en":"dis");
 
 
+	//kprintf("proctab[20] = %s\n",proctab[20].pname);
+	kprintf("currpid: %d, ready queue: ",currpid);
+	int next;
+	for( next = q[rdyhead].qnext ; next != rdytail ; next = q[next].qnext ){
+		kprintf("%d,",q[next].qkey );
+	}
+	kprintf(".\n");
 	/* create a process to execute the user's main program */
 	userpid = create(main,INITSTK,INITPRIO,INITNAME,INITARGS);
 	resume(userpid);
@@ -193,7 +207,6 @@ sysinit()
 	for (i=0 ; i<NPROC ; i++)	/* initialize process table */
 		proctab[i].pstate = PRFREE;
 
-
 #ifdef	MEMMARK
 	_mkinit();			/* initialize memory marking */
 #endif
@@ -216,6 +229,8 @@ sysinit()
 		pptr->pname[j] = "prnull"[j];
 	pptr->plimit = (WORD)(maxaddr + 1) - NULLSTK;
 	pptr->pbase = (WORD) maxaddr - 3;
+	//lDebug(DBG_FLOW,"null pbase=0x%08x, pn=%d",pptr->pbase, pptr->pbase>>12);
+	//lDebug(DBG_FLOW,"null plimit=0x%08x, pn=%d",pptr->plimit, pptr->plimit>>12);
 /*
 	pptr->plimit = (WORD)(maxaddr + 1) - NULLSTK - (4096 - 1024 )*4096;
 	pptr->pbase = (WORD) maxaddr - 3 - (4096-1024)*4096;
@@ -235,59 +250,75 @@ sysinit()
 	rdytail = 1 + (rdyhead=newqueue());/* initialize ready list */
 
 	/* PA3 */
+	/* for process scheduling*/
+	pptr->ppolicy = 0;                /* process scheduling policy    */
+	pptr->ppi = 0;                    /* priority value in psp        */
+	pptr->prate = 0;                  /* rate value in psp            */
+
+	/* for demand paging */
+	pptr->store= -1;                  /* backing store for vheap      */
+    pptr->vhpno = 0;                  /* starting pageno for vheap    */
+	pptr->vhpnpages = 0;              /* vheap size                   */
+    pptr->vmemlist.mlen = 0;
+	pptr->vmemlist.mnext = (struct mblock *) NULL;        /* vheap list              	*/
+
+	pptr->bsm_num = 0;
+
+	/* 2. Initialize all necessary data structures. */
 	init_bsm();
 	init_frm();
-	//TBD
-	//init_pr_queue();
+	init_fqueue();
 
-	/* create global page tables
-	 * create pages 0 to 4095 to real XINU physical memory with 16MB */
+	/* 3. Create 4 global page tables which will map 
+	 * pages 0 through 4095 to the physical 16 MB. */ 
 	for (i = 0; i < 4; i++) 
 	{
 		/* create new frame, labeled it as page table */
 		get_frm(&fid);
 		
-		pt_entry = (FRAME0 + fid) * NBPG;
-
 		frm_tab[fid].fr_status = FRM_MAPPED;
 		frm_tab[fid].fr_type = FR_TBL;
-		frm_tab[fid].fr_pid = NULLPROC;
+		frm_tab[fid].fr_pid = NULLPROC;// TBD: NULLPROC ?
+
+		pt_entry = (pt_t *)((FRAME0 + fid) * NBPG);
 
 		/* insert 1024 entry to page table */
-		for (j = 0; j < NFRAMES; j++, pt_entry++) 
+		for (j = 0; j < (NBPG/4); j++, pt_entry++) 
 		{
 			*pt_entry = clear_pt_entry;
 			pt_entry->pt_pres = 1;
 			pt_entry->pt_write = 1;
 			pt_entry->pt_global = 1;
-			pt_entry->pt_base = i * FRAME0 + j;	
-		}	
+			pt_entry->pt_base = (i * NBPG)/4 + j;	
+		}
+		fid_global_pt[i] = fid;
+		lDebug(DBG_FLOW,"global PT(%d) at frame(%d)\n",i, fid);
 	}
-	/* create 4 global page directories
-	 * create new frame, labeled it as page directory
-	 * use it for Null Proc */
+	/* 4. Allocate and initialize a page directory for the NULL process.*/
 	get_frm(&fid);
-	
-	proctab[NULLPROC].pdbr = (fid + FRAME0) * NBPG;
-	pd_entry = (pd_t *)proctab[NULLPROC].pdbr;
 	
 	frm_tab[fid].fr_status = FRM_MAPPED;
 	frm_tab[fid].fr_type = FR_DIR;
 	frm_tab[fid].fr_pid = NULLPROC;
 
-	for (i = 0; i < NFRAMES; i++, pd_entry++) 
+	proctab[NULLPROC].pdbr = (FRAME0 + fid) * NBPG;
+	pd_entry = (pd_t *)proctab[NULLPROC].pdbr;
+	
+	for (i = 0; i < (NBPG/4); i++, pd_entry++) 
 	{
 		*pd_entry = clear_pd_entry;
 		pd_entry->pd_write = 1;
 		
 		if (i < 4) {
 				pd_entry->pd_pres = 1;
-				pd_entry->pd_base = FRAME0 + i;
+				pd_entry->pd_base = FRAME0 + fid_global_pt[i];
 		}
 	}
-
-	set_evec(14, (u_long)pfintr); /* handle page fault */
+	/* 5. Set the PDBR register to the page directory for the NULL process.*/
 	write_cr3(proctab[NULLPROC].pdbr);
+	/* 6. Install the page fault interrupt service routine. */
+	set_evec(14, (u_long)pfintr); /* handle page fault */
+	/* 7. Enable paging. */
 	enable_paging();
 	/*******/
 

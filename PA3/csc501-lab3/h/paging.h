@@ -1,5 +1,6 @@
 /* paging.h */
 
+#define NPPBS		128		/* number of pages per backing stores */
 typedef unsigned int	 bsd_t;
 
 /* Structure for a page directory entry */
@@ -44,11 +45,13 @@ typedef struct{
 
 typedef struct{
   int bs_status;			/* MAPPED or UNMAPPED		*/
-  int bs_pid;				/* process id using this slot   */
-  int bs_vpno;				/* starting virtual page number */
-  int bs_npages;			/* number of pages in the store */
+  int bs_pid[NPROC];				/* process id using this slot   */
+  int bs_vpno[NPROC];				/* starting virtual page number */
+  int bs_npages[NPROC];			/* number of pages in the store */
+ // int bs_frm[NPPBS];		/* frames contain current bs page */
   int bs_sem;				/* semaphore mechanism ?	*/
   int bs_private;			/* PRIVATE heap or PUBLIC */
+  int bs_npages_max;		/* number of pages in the store */
 } bs_map_t;
 
 typedef struct{
@@ -58,6 +61,8 @@ typedef struct{
   int fr_refcnt;			/* reference count		*/
   int fr_type;				/* FR_DIR, FR_TBL, FR_PAGE	*/
   int fr_dirty;
+  int fr_bsid;				/* bs mapping of this PAGE frame */
+  int fr_pageth;			/* pageth in bs */
 }fr_map_t;
 
 extern bs_map_t bsm_tab[];
@@ -75,7 +80,8 @@ SYSCALL write_bs(char *, bsd_t, int);
 
 #define NBPG		4096	/* number of bytes per page	*/
 #define FRAME0		1024	/* zero-th frame		*/
-#define NFRAMES 	1024	/* number of frames		*/
+//#define NFRAMES 	1024	/* number of frames		*/
+#define NFRAMES 	20	/* number of frames		*/
 #define NBSM	    16		/* number of backing stores	*/
 
 #define isbad_bsid(x) 			( x >= NBSM || x < 0 )
@@ -83,7 +89,7 @@ SYSCALL write_bs(char *, bsd_t, int);
 #define BSM_UNMAPPED	0
 #define BSM_MAPPED		1
 
-#define BSM_PUPLIC 		0
+#define BSM_PUBLIC 		0
 #define BSM_PRIVATE 	1
 
 #define FRM_UNMAPPED	0
@@ -102,5 +108,44 @@ SYSCALL write_bs(char *, bsd_t, int);
 
 #define isbad_npage(x) 			( x > BS_NPAGE_MAX || x <= 0 )
 
+extern int 		print_replace;
+extern int		fid_global_pt[4];
 extern const pt_t clear_pt_entry;
 extern const pd_t clear_pd_entry;
+extern int		vcheckmem_bypass;
+
+extern SYSCALL bsm_map(int pid, int vpno, int source, int npages);
+extern SYSCALL init_bsm();
+extern SYSCALL init_frm();
+extern SYSCALL get_frm(int* avail);
+extern void write_cr3(unsigned long n);
+extern void enable_paging();
+
+extern int check_va_legal(unsigned long va);
+extern int check_vp_in_range(int virtpage, int vpno, int npages);
+extern int bsm_map_refcnt( int bsid ); 
+extern int get_page_entry(int fid, int pid, pt_t **pt_entry, pd_t **pd_entry); 
+
+extern void update_bs();
+extern void update_page();
+
+extern void kill_proc_page(int pid);
+extern void kill_proc_page_table(int pid);
+extern void kill_proc_page_directroy(int pid);
+extern void kill_proc_bsm(int pid);
+extern void release_vheap(int pid);
+//#define DETAIL 1
+#define DBG_LV 0
+
+#define DBG_ERR	 1	
+#define DBG_FLOW 2
+#define DBG_WARN 3
+#define DBG_INFO 4	
+/*
+ * debugLevel use case:
+ * 	level 0 : PA3 defined must-printed error message, please use kprintf directly
+ * 	level 1 : personal defined error message
+ * 	level 2 : debug message
+ * 	level 3 : warning message // rarely used
+ * 	level 4 : info message
+ * */

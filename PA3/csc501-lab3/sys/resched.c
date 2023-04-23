@@ -4,6 +4,8 @@
 #include <kernel.h>
 #include <proc.h>
 #include <q.h>
+#include <paging.h>
+#include <Debug.h>
 
 unsigned long currSP;	/* REAL sp of current process */
 
@@ -21,6 +23,7 @@ int	resched()
 	register struct	pentry	*optr;	/* pointer to old process entry */
 	register struct	pentry	*nptr;	/* pointer to new process entry */
 	register int i;
+	register int f;
 
 	disable(PS);
 	/* no switch needed if current process priority higher than next*/
@@ -30,6 +33,17 @@ int	resched()
 		restore(PS);
 		return(OK);
 	}
+	/*kprintf("currpid: %d(%s), pstate: (%d), prio: (%d), ready queue: ",currpid,proctab[currpid].pname, optr->pstate, optr->pprio);
+	int next;
+	for( next = q[rdyhead].qnext ; next != rdytail ; next = q[next].qnext ){
+		kprintf("%d(%d), ",next, q[next].qkey );
+	}
+	kprintf(".\n");*/
+	/* PA3 */
+	//lDebug(DBG_FLOW,"before ctxsw pid(%d) pname(%s)",currpid, proctab[currpid].pname);	
+	if(proctab[currpid].bsm_num > 0 ){ update_bs(); }
+	//lDebug(DBG_FLOW,"write_bs done");
+	/*******/
 	
 #ifdef STKCHK
 	/* make sure current stack has room for ctsw */
@@ -91,7 +105,11 @@ int	resched()
 #ifdef	DEBUG
 	PrintSaved(nptr);
 #endif
-	
+	/* PA3 */
+	//lDebug(DBG_FLOW,"resume pid(%d) pname(%s), bsm_num= %d",currpid, proctab[currpid].pname, proctab[currpid].bsm_num);	
+	if( proctab[currpid].bsm_num > 0 ) { update_page(); }
+	//lDebug(DBG_FLOW,"read_bs done");
+	/*******/
 	/* The OLD process returns here when resumed. */
 	restore(PS);
 	return OK;

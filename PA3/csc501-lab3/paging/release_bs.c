@@ -10,7 +10,13 @@ SYSCALL release_bs(bsd_t bs_id) {
     STATWORD ps;
   	
 	disable(ps);
-	
+
+	if( isbad_bsid(bs_id) )
+	{
+		restore(ps);
+		return SYSERR;
+	}
+
 	free_bsm(bs_id); 
 	
 	restore(ps);

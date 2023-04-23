@@ -8,6 +8,7 @@
 #include <mem.h>
 #include <io.h>
 #include <paging.h>
+#include <Debug.h>
 
 LOCAL int newpid();
 
@@ -104,19 +105,36 @@ SYSCALL create(procaddr,ssize,priority,name,nargs,args)
 	/* PA3 */
 	/* allocating first 4 global page directory entries  */
 	get_frm(&fid);
-	pd_entry = proctab[pid].pdbr = (fid + FRAME0) * NBPG;
+	pptr->pdbr = (FRAME0 + fid) * NBPG;
+	lDebug(DBG_INFO, "create porcess (%d)'s page dir at frame (%d)", pid, fid);
+	pd_entry = (pd_t *) proctab[pid].pdbr;
+	
 	frm_tab[fid].fr_status = FRM_MAPPED;
 	frm_tab[fid].fr_type = FR_DIR;
 	frm_tab[fid].fr_pid = pid;
 
-	for( i = 0 ; i < NFRAMES ; i++, pd_entry++ )
+	for( i = 0 ; i < (NBPG/4) ; i++, pd_entry++ )
 	{
+		*pd_entry = clear_pd_entry;
 		pd_entry->pd_write = 1;
 		if( i < 4 ){
 			pd_entry->pd_pres = 1;
-			pd_entry->pd_base = FRAME0 + i;
+			pd_entry->pd_base = FRAME0 + fid_global_pt[i];
 		}
 	}
+	/* for process scheduling*/
+	pptr->ppolicy = 0;                /* process scheduling policy    */
+	pptr->ppi = 0;                    /* priority value in psp        */
+	pptr->prate = 0;                  /* rate value in psp            */
+
+	/* for demand paging */
+	pptr->store= -1;                  /* backing store for vheap      */
+    pptr->vhpno = 0;                  /* starting pageno for vheap    */
+	pptr->vhpnpages = 0;              /* vheap size                   */
+    pptr->vmemlist.mlen = 0;
+	pptr->vmemlist.mnext = (struct mblock *) NULL;        /* vheap list              	*/
+
+	pptr->bsm_num = 0;
 	/*******/
 
 	restore(ps);
