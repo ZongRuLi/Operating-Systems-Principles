@@ -32,14 +32,14 @@ WORD	*vgetmem(nbytes)
 	
 	pptr= &proctab[currpid];
 	nbytes = (unsigned int) roundmb(nbytes);
-	lDebug(DBG_FLOW, "[INFO] enter vgetmem with roundmb(nbytes) = %d", nbytes );
-	lDebug(DBG_INFO, "[INFO] &vmemlist = 0x%08x(==NULL? %d), vmemlist->next= 0x%08x", &pptr->vmemlist, &pptr->vmemlist == (struct mblock*) NULL, pptr->vmemlist.mnext );
+	//lDebug(DBG_FLOW, "[INFO] enter vgetmem with roundmb(nbytes) = %d", nbytes );
+	//lDebug(DBG_INFO, "[INFO] &vmemlist = 0x%08x(==NULL? %d), vmemlist->next= 0x%08x", &pptr->vmemlist, &pptr->vmemlist == (struct mblock*) NULL, pptr->vmemlist.mnext );
 
 	for ( q = &proctab[currpid].vmemlist, p = proctab[currpid].vmemlist.mnext ;
 		p != (struct mblock *) NULL ;
 		q = p , p = p->mnext ) 
 	{
-		lDebug(DBG_INFO,"[LOOP] q= 0x%08x, p= 0x%08x, p->mlen=%d", q , p, p->mlen);
+		//lDebug(DBG_INFO,"[LOOP] q= 0x%08x, p= 0x%08x, p->mlen=%d", q , p, p->mlen);
 		if (p->mlen < nbytes) 
 			continue;
 		

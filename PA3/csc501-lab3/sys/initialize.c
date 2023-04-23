@@ -292,7 +292,7 @@ sysinit()
 			pt_entry->pt_base = (i * NBPG)/4 + j;	
 		}
 		fid_global_pt[i] = fid;
-		lDebug(DBG_FLOW,"global PT(%d) at frame(%d)\n",i, fid);
+		//lDebug(DBG_FLOW,"global PT(%d) at frame(%d)\n",i, fid);
 	}
 	/* 4. Allocate and initialize a page directory for the NULL process.*/
 	get_frm(&fid);

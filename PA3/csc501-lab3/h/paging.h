@@ -81,7 +81,7 @@ SYSCALL write_bs(char *, bsd_t, int);
 #define NBPG		4096	/* number of bytes per page	*/
 #define FRAME0		1024	/* zero-th frame		*/
 //#define NFRAMES 	1024	/* number of frames		*/
-#define NFRAMES 	20	/* number of frames		*/
+#define NFRAMES 	1024	/* number of frames		*/
 #define NBSM	    16		/* number of backing stores	*/
 
 #define isbad_bsid(x) 			( x >= NBSM || x < 0 )

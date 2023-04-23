@@ -25,7 +25,7 @@ SYSCALL kill(int pid)
 
 	disable(ps);
 	//TBD: comment out this print because I don't know why compiler failed at this.
-	lDebug(DBG_FLOW,"[INFO][kill] start kill pid(%d). ",_pid);
+	//lDebug(DBG_FLOW,"[INFO][kill] start kill pid(%d). ",_pid);
 	
 	if (isbadpid(_pid) || (pptr= &proctab[_pid])->pstate==PRFREE) {
 		restore(ps);
@@ -33,22 +33,22 @@ SYSCALL kill(int pid)
 	}
 	/* PA3 */
 	/* 1. All frames which currently hold any of its pages should be written to the backing store and be freed */
-	lDebug(DBG_INFO,"[INFO][kill] start delete page frame. pid=(%d)", _pid);
+	//lDebug(DBG_INFO,"[INFO][kill] start delete page frame. pid=(%d)", _pid);
 	kill_proc_page(_pid);
 
-	lDebug(DBG_INFO,"[INFO][kill] start delete page table frame. pid (%d)",_pid);
+	//lDebug(DBG_INFO,"[INFO][kill] start delete page table frame. pid (%d)",_pid);
 	kill_proc_page_table(_pid);
 	
-	lDebug(DBG_INFO,"[INFO][kill] start unmap. pid (%d)",_pid);
+	//lDebug(DBG_INFO,"[INFO][kill] start unmap. pid (%d)",_pid);
 	/* 2. All of its mappings should be removed from the backing store map. */
 	kill_proc_bsm(_pid);
 	
-	lDebug(DBG_INFO,"[INFO][kill] unmap all bsm. pid (%d)",_pid);
+	//lDebug(DBG_INFO,"[INFO][kill] unmap all bsm. pid (%d)",_pid);
 	/* 3. The backing stores for its heap (and stack if have chosen to implement a private stack) should be released (remember
 	 * backing stores allocated to a process should persist unless the process explicitly releases them).*/
 	release_vheap(_pid);
 	
-	lDebug(DBG_FLOW,"[INFO][kill] pid (%d). ",_pid);
+	//lDebug(DBG_FLOW,"[INFO][kill] pid (%d). ",_pid);
 	/*******/
 	if (--numproc == 0)
 		xdone();
@@ -63,16 +63,16 @@ SYSCALL kill(int pid)
 	if (! isbaddev(dev) )
 		close(dev);
 	
-	lDebug(DBG_INFO,"[INFO][kill] start send page. ");
+	//lDebug(DBG_INFO,"[INFO][kill] start send page. ");
 	send(pptr->pnxtkin, _pid);
 
-	lDebug(DBG_INFO,"[INFO][kill] start freestk. ");
+	//lDebug(DBG_INFO,"[INFO][kill] start freestk. ");
 	freestk(pptr->pbase, pptr->pstklen);
 
-	lDebug(DBG_FLOW,"[INFO][kill] (%d) done. ",_pid);
 	/* 4. The frame used for the page directory should be released. */
 	kill_proc_page_directroy(_pid);
 
+	//lDebug(DBG_FLOW,"[INFO][kill] (%d) done. ",_pid);
 	/*******/
 	switch (pptr->pstate) {
 

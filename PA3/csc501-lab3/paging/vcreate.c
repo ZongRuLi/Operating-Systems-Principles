@@ -40,21 +40,21 @@ SYSCALL vcreate(procaddr,ssize,hsize,priority,name,nargs,args)
 
 	if( isbad_npage(hsize) )
 	{
-		lDebug(DBG_ERR,"[ERROR][vcreate] invalid hsize (%d)", hsize);
+		//lDebug(DBG_ERR,"[ERROR][vcreate] invalid hsize (%d)", hsize);
 		restore(ps);
 		return SYSERR;
 	}
 
 	if( get_bsm(&bs_id) == SYSERR )
 	{
-		lDebug(DBG_ERR,"[ERROR][vcreate] no avail bs_id");
+		//lDebug(DBG_ERR,"[ERROR][vcreate] no avail bs_id");
 		restore(ps);
 		return SYSERR;
 	}
 	
 	if( (pid = create(procaddr, ssize, priority, name, nargs, args)) == SYSERR )
 	{
-		lDebug(DBG_ERR,"[ERROR][vcreate] create fail\n");
+		//lDebug(DBG_ERR,"[ERROR][vcreate] create fail\n");
 		restore(ps);
 		return SYSERR;
 	}
@@ -65,7 +65,7 @@ SYSCALL vcreate(procaddr,ssize,hsize,priority,name,nargs,args)
 
 	if( bsm_map(pid, 4096, bs_id, hsize) == SYSERR )
 	{
-		lDebug(DBG_ERR,"[ERROR][vcreate] bsm_map fail\n");
+		//lDebug(DBG_ERR,"[ERROR][vcreate] bsm_map fail\n");
 		restore(ps);
 		return SYSERR;
 	}

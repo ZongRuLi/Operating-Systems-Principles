@@ -86,8 +86,8 @@ SYSCALL bsm_lookup(int pid, long vpno, int* store, int* pageth)
 		int		proc_can_access = bsm_tab[i].bs_pid[pid] == 1 || bsm_tab[i].bs_private == BSM_PUBLIC;
 		int		bs_is_mapped 	= bsm_tab[i].bs_status == BSM_MAPPED;
 		int		vp_match_bs		= check_vp_in_range( vpno, bsm_tab[i].bs_vpno[pid], bsm_tab[i].bs_npages[pid] );
-		lDebug(DBG_INFO,"proc(%d)_can_access(%d)=%d, bs_is_mapped=%d, vp(0x%08x)_match_bs(0x%08x,0x%08x)=%d",
-						pid, proc_can_access,i, bs_is_mapped, vpno, bsm_tab[i].bs_vpno[pid], bsm_tab[i].bs_npages[pid], vp_match_bs);
+		//lDebug(DBG_INFO,"proc(%d)_can_access(%d)=%d, bs_is_mapped=%d, vp(0x%08x)_match_bs(0x%08x,0x%08x)=%d",
+		//				pid, proc_can_access,i, bs_is_mapped, vpno, bsm_tab[i].bs_vpno[pid], bsm_tab[i].bs_npages[pid], vp_match_bs);
 		
 		if( proc_can_access && bs_is_mapped && vp_match_bs )
 		{
@@ -129,7 +129,7 @@ SYSCALL bsm_map(int pid, int vpno, int source, int npages)
 
 	proctab[pid].bsm_num++;
 
-	lDebug(DBG_FLOW,"[INFO][bsm_map] pid(%d) map bs(%d), vpno=0x%08x, vpno_max=0x%08x, npages = %d",pid, source, vpno, vpno+npages, npages);
+	//lDebug(DBG_FLOW,"[INFO][bsm_map] pid(%d) map bs(%d), vpno=0x%08x, vpno_max=0x%08x, npages = %d",pid, source, vpno, vpno+npages, npages);
 
 	return (OK);
 }
@@ -146,13 +146,13 @@ SYSCALL bsm_unmap(int pid, int vpno, int isPrivate)
 	pd_t	*pd_entry;
 	pt_t	*pt_entry;
 
-	lDebug(DBG_FLOW,"[INFO][bsm_unmap] enter unmap");
+	//lDebug(DBG_FLOW,"[INFO][bsm_unmap] enter unmap");
 	if (bsm_lookup(pid, vpno, &bs_id, &pageth) == SYSERR)
 	{
-		lDebug(DBG_ERR,"[INFO][bsm_unmap] fail lookup bsm ");
+		//lDebug(DBG_ERR,"[INFO][bsm_unmap] fail lookup bsm ");
 		return SYSERR;
 	}
-	lDebug(DBG_INFO,"[INFO][bsm_unmap] start unmap");
+	//lDebug(DBG_INFO,"[INFO][bsm_unmap] start unmap");
    	vpno = bsm_tab[bs_id].bs_vpno[pid];
 	npages = bsm_tab[bs_id].bs_npages[pid];
 	//if (free_bsm(pid) == SYSERR)
@@ -185,7 +185,7 @@ SYSCALL bsm_unmap(int pid, int vpno, int isPrivate)
 		{
 			write_bs( (FRAME0 + i) * NBPG, bs_id, frm_tab[i].fr_pageth);
 
-			lDebug(DBG_INFO,"[INFO][bsm_unmap] free_frm(%d)",i);
+			//lDebug(DBG_INFO,"[INFO][bsm_unmap] free_frm(%d)",i);
 				
 			free_frm( i );
 				
@@ -209,14 +209,14 @@ void kill_proc_bsm(int _pid)
 	int i;
 	//if( isbadpid(_pid) ){ return; }
 
-	lDebug(DBG_INFO, "[INFO] enter kill_proc_bsm, pid= %d",_pid);
+	//lDebug(DBG_INFO, "[INFO] enter kill_proc_bsm, pid= %d",_pid);
 	
 	for( i = 0 ; i < NBSM ; i++ )
 	{
 		int		proc_hold_bs 	= bsm_tab[i].bs_pid[_pid] == 1;
 		int		bs_is_mapped 	= bsm_tab[i].bs_status == BSM_MAPPED;
 
-		lDebug(DBG_INFO, "[INFO] bsm_tab[i].bs_pid[%d]= %d",_pid, bsm_tab[i].bs_pid[_pid]);
+		//lDebug(DBG_INFO, "[INFO] bsm_tab[i].bs_pid[%d]= %d",_pid, bsm_tab[i].bs_pid[_pid]);
 		
 		if(proc_hold_bs && bs_is_mapped)
 		{

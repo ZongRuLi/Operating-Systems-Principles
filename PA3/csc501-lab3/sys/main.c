@@ -56,13 +56,15 @@ void proc2_test0(char *msg, int lck)
 	int BSID0 = 14;
 	kprintf("\n- [TEST][0.2] xmmap virtual address to vheap. \n");
 	
-	get_bs( BSID0 ,128);	
-	
 	if( bsm_tab[0].bs_status != BSM_MAPPED ){
 		kprintf("[ERROR] try other bs id\n");
 	}
 	
-	if (xmmap( 4096 , TEST1_BS, 100) == SYSERR)
+	if( get_bs( 0 ,128) != SYSERR ){
+		kprintf("- [ERROR] test 0.2 failed!\n");
+	}	
+	
+	if (xmmap( 4096 , 0 , 100) == SYSERR)
 		kprintf("- PASS TEST 0.2 PASS\n");
 	else
 		kprintf("- [ERROR] test 0.2 failed!\n");
@@ -93,6 +95,24 @@ void proc3_test0(char *msg, int lck)
 	release_bs( BSID0 );
 	release_bs( BSID1 );
 	return;
+}
+void proc4_test0(char *msg, int lck)
+{
+	kprintf("\n- [TEST][0.4] repeat xmmap - xmunmap after obtain backing store\n");
+	int BSID0 = 14;
+	get_bs( BSID0 , 128 );
+
+	if (xmmap(PROC1_VPNO, BSID0, 100) == SYSERR)
+	{
+		kprintf("- xmmap call failed\n");
+		sleep(3);
+		return;
+	}
+	xmunmap(PROC1_VPNO);
+	if (xmmap(PROC1_VPNO, BSID0, 100) == SYSERR)
+		kprintf("- [ERROR] test 0.4 failed!\n");
+	else
+		kprintf("- PASS TEST 0.4 PASS\n");
 }
 
 void proc1_test1(char *msg, int lck)
@@ -129,16 +149,34 @@ void proc1_test1(char *msg, int lck)
 
 void proc1_test2(char *msg, int lck)
 {
-	int *x;
+	int *x, *y, *z, *w;
 
 	kprintf("- ready to allocate heap space\n");
 	x = vgetmem(1024);
-	kprintf("- heap allocated at %x\n", x);
+	kprintf("- heap 1 allocated at %x\n", x);
 	*x = 100;
 	*(x + 1) = 200;
-
 	kprintf("heap variable: %d %d\n", *x, *(x + 1));
-	vfreemem(x, 1024);
+
+	y = vgetmem(1024);
+	kprintf("- heap 2 allocated at %x\n", y);
+	*y = 300;
+	*(y + 1) = 400;
+	kprintf("heap variable: %d %d\n", *y, *(y + 1));
+	
+	z = vgetmem(1024);
+	kprintf("- heap 3 allocated at %x\n", z);
+	*z = 300;
+	*(z + 1) = 400;
+	kprintf("heap variable: %d %d\n", *z, *(z + 1));
+
+	vfreemem(y, 1024);
+	
+	w = vgetmem(1024);
+	kprintf("- heap 4 allocated at %x\n", w);
+	*w = 300;
+	*(w + 1) = 400;
+	kprintf("heap variable: %d %d\n", *w, *(w + 1));
 	
 	//kprintf("- test freed heap variable(illegal), should page fault & kill process\n");
 
@@ -214,7 +252,7 @@ void proc2_test3(char *msg, int lck)
 		*(addr + i * NBPG) = 'A' + i;
 	}
 
-	xmunmap(PROC2_VPNO);
+	//xmunmap(PROC2_VPNO);
 	return;
 }
 
@@ -222,7 +260,7 @@ void proc_replacement_test(int _policy)
 {
 	char* replace_policy;
 	int *addr, *var;
-	int i;
+	int i, temp;
 	int bsid;
 	int total_bsid = 5;
 	int npage = 3;
@@ -273,12 +311,13 @@ void proc_replacement_test(int _policy)
 	{
 		var = addr + (vpno_seq[i] * NBPG)/4;
 		*(var) = 1000 * (vpno_seq[i]/npage) + vpno_seq[i];
-		kprintf("0x%08x: %d\n", var, *(var));
+		//kprintf("0x%08x: %d\n", var, *(var));
 	}
 	
 	for (i = max_vpno; i >= 0; i--)
 	{
 		var = addr + (i*NBPG)/4;
+		temp = *(var);
 		kprintf("0x%08x: %d\n", var, *(var));
 	}
 	
@@ -331,6 +370,9 @@ int main(int argc, const char* argv[])
 	pid1 = create(proc3_test0, 2000, 20, "proc3_test0", 0, NULL);
 	resume(pid1);
 	sleep(1);
+	pid1 = create(proc4_test0, 2000, 20, "proc4_test0", 0, NULL);
+	resume(pid1);
+	sleep(1);
 
 	kprintf("\n1: shared memory\n");
 	pid1 = create(proc1_test1, 2000, 20, "proc1_test1", 0, NULL);
@@ -340,10 +382,11 @@ int main(int argc, const char* argv[])
 	
 	kprintf("\n2: vgetmem/vfreemem\n");
 	pid1 = vcreate(proc1_test2, 2000, 100, 20, "proc1_test2", 0, NULL);
-	kprintf("pid %d has private heap\n", pid1);
+	kprintf("- pid %d has private heap\n", pid1);
 	resume(pid1);
 	sleep(3);
-	if(debugLevel >= DBG_ERR ){ print_frame_status(20); }
+	//if(debugLevel >= DBG_ERR )
+	{ print_frame_status(20); }
 	
 	//if(debugLevel >= DBG_ERR ){ print_frame_status(100); }
 

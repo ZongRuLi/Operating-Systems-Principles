@@ -53,20 +53,20 @@ SYSCALL get_frm(int* avail)
 	/* 1. Search inverted page table for an empty frame. If one exists stop. */
 	if( find_avail_frame( avail ) == OK )
 	{
-		if( debugLevel >= DBG_INFO ){ fq_print(); }
+		//if( debugLevel >= DBG_INFO ){ fq_print(); }
 		return OK;
 	}
 	/* 2. Else, Pick a page to replace. 
 	 * if no available frames, get next replaced frame based on page replacement policy */	
 	if( (fid = find_victim_frame() ) < 0 )
 	{
-		lDebug(DBG_ERR,"[ERROR][get_frm] frame is full, no PAGE frame exist, no frame can be replaced!");
+		//lDebug(DBG_ERR,"[ERROR][get_frm] frame is full, no PAGE frame exist, no frame can be replaced!");
 		return SYSERR;
 	}
 	//if(print_replace){ lDebug(0,"[get_frm] replace frame (%d)", fid); }
 	if(print_replace){ kprintf("%d\n",fid); }
 
-	if( debugLevel >= DBG_INFO ){ fq_print(); }
+	//if( debugLevel >= DBG_INFO ){ fq_print(); }
 
 	free_frm( fid );
 	
@@ -87,24 +87,24 @@ SYSCALL free_frm(int i)
 	pd_t 	*pd_entry;
 	int		illegal_fid;
 
-	lDebug(DBG_FLOW,"[INFO][free_frm] start ", i);
+	//lDebug(DBG_FLOW,"[INFO][free_frm] start ", i);
 
 	// frm 0 -3 is global page table and should never be freed untill whole program end.
 	// this is to prevent error.
 	illegal_fid = i<4 || i >= NFRAMES;
 	if(illegal_fid)
 	{
-		lDebug(DBG_ERR,"[ERROR][free_frm] illegal frame id (%d)!!! ", i);
+		//lDebug(DBG_ERR,"[ERROR][free_frm] illegal frame id (%d)!!! ", i);
 		return SYSERR;
 	}
 
 	if( frm_tab[i].fr_type != FR_PAGE )
 	{
-		lDebug(DBG_ERR,"[ERROR][free_frm] should not free page table and directory!!! ");
+		//lDebug(DBG_ERR,"[ERROR][free_frm] should not free page table and directory!!! ");
 		return SYSERR;
 	}
 	// get information
-	lDebug(DBG_INFO, "[INFO][free_frm] frame %d start free ", i);
+	//lDebug(DBG_INFO, "[INFO][free_frm] frame %d start free ", i);
 	
 	bs_id = frm_tab[i].fr_bsid;
 	pageth = frm_tab[i].fr_pageth;
@@ -126,10 +126,10 @@ SYSCALL free_frm(int i)
 	 * get vp, the virtual page number of the page to be replaced. */
 	if( get_page_entry(i,pid, &pt_entry, &pd_entry) == SYSERR )
 	{
-		lDebug(DBG_ERR, "[ERROR][free_frm] get_page_entry got invalid pd_entry.");
+		//lDebug(DBG_ERR, "[ERROR][free_frm] get_page_entry got invalid pd_entry.");
 		write_bs((FRAME0 + i) * NBPG, bs_id, pageth);
 		clear_frm_entry(i);
-		lDebug(DBG_FLOW, "free_frm done");
+		//lDebug(DBG_FLOW, "free_frm done");
 		return SYSERR;	
 	}
 		
@@ -138,7 +138,7 @@ SYSCALL free_frm(int i)
 	/* 9. Mark the appropriate entry of pt as not present.*/
 	*pt_entry = clear_pt_entry;
 
-	lDebug(DBG_INFO,"[INFO][free_frm] pd_base(%d), page table frame[%d].fr_recnt=%d", pd_entry->pd_base,f, frm_tab[f].fr_refcnt -1 );
+	//lDebug(DBG_INFO,"[INFO][free_frm] pd_base(%d), page table frame[%d].fr_recnt=%d", pd_entry->pd_base,f, frm_tab[f].fr_refcnt -1 );
 	
 	/* 10. If the page being removed belongs to the current process, 
 	 * invalidate the TLB entry for the page vp using the invlpg instruction (see Intel Volume III/II).
@@ -176,7 +176,7 @@ SYSCALL free_frm(int i)
 
 	clear_frm_entry(i);
 	
-	lDebug(DBG_FLOW, "free_frm done");
+	//lDebug(DBG_FLOW, "free_frm done");
 	
 	return OK;
 }
@@ -224,20 +224,20 @@ int get_page_entry(int fid, int pid, pt_t **pt_entry, pd_t **pd_entry)
 	/* 4. Let a be vp*4096 (the first virtual address on page vp). */
 	a = frm_tab[fid].fr_vpno << 12;
 	va = &a;
-	lDebug(DBG_INFO,"[get_page_entry] va=0x%08x, va->pd_offset=%d, va->pt_offset=%d, va_pg_offset=%d",a, va->pd_offset, va->pt_offset, va->pg_offset);
+	//lDebug(DBG_INFO,"[get_page_entry] va=0x%08x, va->pd_offset=%d, va->pt_offset=%d, va_pg_offset=%d",a, va->pd_offset, va->pt_offset, va->pg_offset);
 	/* 5. Let p be the high 10 bits of a. Let q be bits [21:12] of a. */
 	/* 6. Let pid be the pid of the process owning vp. */
 	/* 7. Let pd point to the page directory of process pid. */
 	*pd_entry = (pd_t*) (proctab[pid].pdbr + va->pd_offset * sizeof(pd_t) );
 	
 	if(!(*pd_entry)->pd_pres){ 
-		lDebug(DBG_ERR, "[get_page_entry] page table does not exist!!");
+		//lDebug(DBG_ERR, "[get_page_entry] page table does not exist!!");
 		return SYSERR;
 	}
 
 	/* 8. Let pt point to the pid’s p-th page table. */
 	*pt_entry = (pt_t*) ( (*pd_entry)->pd_base * NBPG + va->pt_offset * sizeof(pt_t) );
-	lDebug(DBG_INFO, "[get_page_entry] pid(%d), pdbr=0x%08x, pd=0x%08x, pt=0x%08x",pid, proctab[pid].pdbr ,*pd_entry,*pt_entry);
+	//lDebug(DBG_INFO, "[get_page_entry] pid(%d), pdbr=0x%08x, pd=0x%08x, pt=0x%08x",pid, proctab[pid].pdbr ,*pd_entry,*pt_entry);
 	return OK;
 }
 
@@ -268,7 +268,7 @@ void update_page()
 	int frm_is_page;
 	fr_map_t *fptr;
 
-	lDebug(DBG_FLOW,"[INFO] enter update page. pid(%d)", currpid);	
+	//lDebug(DBG_FLOW,"[INFO] enter update page. pid(%d)", currpid);	
 	for( f = 0 ; f < NFRAMES ; f++ ){
 		fptr = &frm_tab[f];
 		proc_hold_frame = fptr->fr_pid == currpid;
@@ -277,7 +277,7 @@ void update_page()
 		
 		if(proc_hold_frame && frm_is_mapped && frm_is_page ){
 			read_bs((char*)((FRAME0 + f) * NBPG), fptr->fr_bsid, fptr->fr_pageth);
-			lDebug(DBG_INFO,"[update_page] read_bs, frm(%d), bsid(%d), pageth(%d), value(%c)", f,fptr->fr_bsid, fptr->fr_pageth, *((char*)((FRAME0 + f) * NBPG )));
+			//lDebug(DBG_INFO,"[update_page] read_bs, frm(%d), bsid(%d), pageth(%d), value(%c)", f,fptr->fr_bsid, fptr->fr_pageth, *((char*)((FRAME0 + f) * NBPG )));
 		}
 	}
 }
@@ -300,7 +300,7 @@ void kill_proc_page(int _pid)
 		//}
 		if( fr_not_page || fr_is_unmapped || proc_doesnt_use_fr )	{ continue; }
 		//info("[INFO][kill] pid(%d). frm_tab[%d].fr_type=%d",_pid, i, frm_tab[i].fr_type);
-		lDebug(DBG_INFO,"[kill] Frame (%d)", i);
+		//lDebug(DBG_INFO,"[kill] Frame (%d)", i);
 		if(fr_map_bs){
 			write_bs((FRAME0 + i) * NBPG, frm_tab[i].fr_bsid, frm_tab[i].fr_pageth);
 		}
@@ -326,7 +326,7 @@ void kill_proc_page_table(int _pid)
 		if( pd_entry->pd_pres )
 		{
 			int f = pd_entry->pd_base - FRAME0;
-			lDebug(DBG_INFO,"[INFO][kill] clear frame (%d), pd_base(%d)=%d ", f, i , pd_entry);
+			//lDebug(DBG_INFO,"[INFO][kill] clear frame (%d), pd_base(%d)=%d ", f, i , pd_entry);
 
 			clear_frm_entry(f);
 		}
@@ -338,5 +338,5 @@ void kill_proc_page_directroy(int _pid)
 {
 	int fid_dir = ( proctab[_pid].pdbr / NBPG ) - FRAME0;
 	clear_frm_entry( fid_dir );
-	lDebug(DBG_INFO,"[INFO][kill] free pd frm (%d). ",fid_dir);
+	//lDebug(DBG_INFO,"[INFO][kill] free pd frm (%d). ",fid_dir);
 }

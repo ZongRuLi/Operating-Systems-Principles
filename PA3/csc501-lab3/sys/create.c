@@ -106,7 +106,7 @@ SYSCALL create(procaddr,ssize,priority,name,nargs,args)
 	/* allocating first 4 global page directory entries  */
 	get_frm(&fid);
 	pptr->pdbr = (FRAME0 + fid) * NBPG;
-	lDebug(DBG_INFO, "create porcess (%d)'s page dir at frame (%d)", pid, fid);
+	//lDebug(DBG_INFO, "create porcess (%d)'s page dir at frame (%d)", pid, fid);
 	pd_entry = (pd_t *) proctab[pid].pdbr;
 	
 	frm_tab[fid].fr_status = FRM_MAPPED;

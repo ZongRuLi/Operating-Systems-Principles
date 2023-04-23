@@ -72,7 +72,7 @@ SYSCALL pfint()
 	/* 3. Let pd point to the current page directory. */
 	pdbr = proctab[currpid].pdbr;
    	pd = pdbr + ( virtual_address->pd_offset * sizeof(pd_t) );
-	lDebug(DBG_INFO,"[pfint] pdbr(%02d)=0x%08x, pd=0x%08x",currpid, pdbr, pd);
+	//lDebug(DBG_INFO,"[pfint] pdbr(%02d)=0x%08x, pd=0x%08x",currpid, pdbr, pd);
 	/* 4. Check that a is a legal address (i.e. that it has been mapped in pd). TBD: what is mapped in pd??
 	 * 	  If it is not, print an error message and kill the process. 
 	 * 8.1. Using the backing store map, find the store s and page offset o which correspond to vp. */
@@ -87,7 +87,7 @@ SYSCALL pfint()
 
 	if( a_is_not_mapped_in_bsm || va_is_not_legal ) 
 	{
-		lDebug(DBG_ERR,"[ERROR][pfint] va= 0x%08x is not mapped in pd! or it mapped in vheap but not vgetmem yet!",a);
+		kprintf("[ERROR][pfint] va= 0x%08x is not mapped in pd!\n",a);
 		kill(currpid);
 		restore(ps);
 		return SYSERR;
@@ -109,12 +109,12 @@ SYSCALL pfint()
 
 		if(create_pt_fail)
 		{
-			lDebug(DBG_ERR,"[ERROR][pfint] can't create frame for page directory!");
+			//lDebug(DBG_ERR,"[ERROR][pfint] can't create frame for page directory!");
 			kill(currpid);
 			restore(ps);
 			return SYSERR;
 		}
-		lDebug(DBG_INFO,"[INFO][pfint] create PT in frame(%d)",fid - FRAME0);
+		//lDebug(DBG_INFO,"[INFO][pfint] create PT in frame(%d)",fid - FRAME0);
 	}
 
 	/* 7. Let pt point to the p-th page table. allocate page table entry */
@@ -130,17 +130,17 @@ SYSCALL pfint()
 		int fail_to_get_frame = get_frm(&f) == SYSERR;
 		if( fail_to_get_frame || (f<0) || (f>=NFRAMES) )
 		{
-			kprintf("[ERROR][pfint] fail to get frame for page!");
+			//kprintf("[ERROR][pfint] fail to get frame for page!");
 			kill(currpid);
 			restore(ps);
 			return SYSERR;
 		}
-		lDebug(DBG_INFO,"[INFO][pfint] get frame (%d) for page.",f);
+		//lDebug(DBG_INFO,"[INFO][pfint] get frame (%d) for page.",f);
 		/* 8.2. In the inverted page table, increase the reference count of the frame that holds pt.
 		 * This indicates that one more of pt's entries is marked as "present." */
 		frm_tab[pd->pd_base - FRAME0].fr_refcnt++;
 
-		lDebug(DBG_INFO,"[INFO][pfint] increase refcnt(%d) in PT frame(%d)",frm_tab[pd->pd_base - FRAME0].fr_refcnt, pd->pd_base - FRAME0);
+		//lDebug(DBG_INFO,"[INFO][pfint] increase refcnt(%d) in PT frame(%d)",frm_tab[pd->pd_base - FRAME0].fr_refcnt, pd->pd_base - FRAME0);
 		
 		/* append page replacement policy queue*/
 		// TBD: insert frame in to SC
@@ -163,12 +163,12 @@ SYSCALL pfint()
 		frm_tab[f].fr_bsid = s;
 		frm_tab[f].fr_pageth = o;
 
-		lDebug(DBG_INFO,"[INFO][pfint] create page in frame(%d), pid=%d, vpno=0x%08x",f, currpid, vp);
-		lDebug(DBG_INFO,"[INFO][pfint] pid(%d), pdbr=0x%08x, pd=0x%08x, pt=0x%08x",currpid, proctab[currpid].pdbr, pd,pt);
+		//lDebug(DBG_INFO,"[INFO][pfint] create page in frame(%d), pid=%d, vpno=0x%08x",f, currpid, vp);
+		//lDebug(DBG_INFO,"[INFO][pfint] pid(%d), pdbr=0x%08x, pd=0x%08x, pt=0x%08x",currpid, proctab[currpid].pdbr, pd,pt);
 	}
 	
 	write_cr3(proctab[currpid].pdbr);
-	lDebug(DBG_FLOW,"[INFO][pfint] finish pfint");
+	//lDebug(DBG_FLOW,"[INFO][pfint] finish pfint");
 	
 	restore(ps);
 	return OK;

@@ -121,6 +121,7 @@ SYSCALL	vfreemem(block, size)
  *  if yes, this means it is a legal virtual address allocated by vgetmem!
  *------------------------------------------------------------------------
  */
+/*
 int check_va_legal(unsigned long block)
 {
 	int 			size = 4; 
@@ -168,4 +169,4 @@ int check_va_legal(unsigned long block)
 	}
 	vcheckmem_bypass = 0;
 	return OK;
-}
+}*/

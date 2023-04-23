@@ -65,10 +65,10 @@ int sc_policy()
 	   	int frm_map_proc = vpno >= 4096;
 		int frm_unmapped = frm_tab[fid].fr_status == FRM_UNMAPPED;
 
-		lDebug(DBG_FLOW,"[sc_policy] enter sc_policy, current position = frm(%d), vpno = 0x%08x", fqcurrpos, vpno);
+		//lDebug(DBG_FLOW,"[sc_policy] enter sc_policy, current position = frm(%d), vpno = 0x%08x", fqcurrpos, vpno);
 
 		if( isbadpid(pid) || isbad_fid || !frm_map_proc || frm_unmapped ){
-			lDebug(DBG_ERR, "[ERROR][sc_policy] frame(%d) inside circular queue is illegal!",fid);
+			//lDebug(DBG_ERR, "[ERROR][sc_policy] frame(%d) inside circular queue is illegal!",fid);
 			fq_next_pos();
 			fq_delete(fid);
 			continue;
@@ -76,7 +76,7 @@ int sc_policy()
 		
 		if( get_page_entry(fid, pid, &pt_entry, &pd_entry) == SYSERR )
 		{
-			lDebug(DBG_ERR, "[ERROR][sc_policy] Can't find page entry of frame (%d) pid(%d)", fid, pid);
+			//lDebug(DBG_ERR, "[ERROR][sc_policy] Can't find page entry of frame (%d) pid(%d)", fid, pid);
 			// if can't find in PT, treat this frame as no longer needed.
 			fq_next_pos();
 			fq_delete(fid);
@@ -85,7 +85,7 @@ int sc_policy()
 
 		int ref_bit_is_not_set = pt_entry->pt_acc == 0;
 
-		lDebug(DBG_INFO,"[INFO] fid(%d) pt_acc = %d",fid, pt_entry->pt_acc);
+		//lDebug(DBG_INFO,"[INFO] fid(%d) pt_acc = %d",fid, pt_entry->pt_acc);
 
 		if(ref_bit_is_not_set)
 		{
