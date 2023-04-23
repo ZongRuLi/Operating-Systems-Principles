@@ -1,371 +1,0 @@
-c[?7l[2J[0mSeaBIOS (version 1.11.0-2.el7)
-
-
-iPXE (http://ipxe.org) 00:03.0 C980 PCI2.10 PnP PMM+07F94620+07ED4620 C980
-Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
-
-
-Booting from ROM..system running up!
-
-
-PC Xinu (CSC501 1-2017 base) #1 (zli87@vclvm177-77.vcl) Sun Apr 23 02:25:58 EDT 2023
-
-4194304 bytes real mem
-111683 bytes Xinu code
-clock enabled
-currpid: 0, ready queue: .
-
-
-Hello World, Xinu@QEMU lives
-
-
-0: illegal use cases
-
-- [TEST][0.0] xmmap without get backing store
-- PASS TEST 0.0 PASS
-
-- [TEST][0.1] vgetmem size more than vcreate's hsize
-- PASS TEST 0.2 PASS
-
-- [TEST][0.2] xmmap virtual address to vheap. 
-- PASS TEST 0.2 PASS
-
-- [TEST][0.3] xmmap overlap previous xmmap 
-- PASS TEST 0.3 PASS
-
-1: shared memory
-0x40000000: A
-0x40001000: B
-0x40002000: C
-0x40003000: D
-0x40004000: E
-0x40005000: F
-0x40006000: G
-0x40007000: H
-0x40008000: I
-0x40009000: J
-0x4000a000: K
-0x4000b000: L
-0x4000c000: M
-0x4000d000: N
-0x4000e000: O
-0x4000f000: P
-0x40010000: Q
-0x40011000: R
-0x40012000: S
-0x40013000: T
-0x40014000: U
-0x40015000: V
-0x40016000: W
-0x40017000: X
-0x40018000: Y
-0x40019000: Z
-
-2: vgetmem/vfreemem
-pid 43 has private heap
-- ready to allocate heap space
-- heap allocated at 1000000
-heap variable: 100 200
-
-3: shared memory between processes test,
-Expect proc2 read out the same conetent proc1 write into bs.
-[proc1_test4] addr = 0x40000000
-[proc1_test4] addr = 0x40001000
-[proc1_test4] addr = 0x40002000
-[proc1_test4] addr = 0x40003000
-[proc1_test4] addr = 0x40004000
-[proc1_test4] addr = 0x40005000
-[proc1_test4] addr = 0x40006000
-[proc1_test4] addr = 0x40007000
-[proc1_test4] addr = 0x40008000
-[proc1_test4] addr = 0x40009000
-[proc1_test4] addr = 0x4000a000
-[proc1_test4] addr = 0x4000b000
-[proc1_test4] addr = 0x4000c000
-[proc1_test4] addr = 0x4000d000
-[proc1_test4] addr = 0x4000e000
-[proc1_test4] addr = 0x4000f000
-[proc1_test4] addr = 0x40010000
-[proc1_test4] addr = 0x40011000
-[proc1_test4] addr = 0x40012000
-[proc1_test4] addr = 0x40013000
-[proc1_test4] addr = 0x40014000
-[proc1_test4] addr = 0x40015000
-[proc1_test4] addr = 0x40016000
-[proc1_test4] addr = 0x40017000
-[proc1_test4] addr = 0x40018000
-[proc1_test4] addr = 0x40019000
--proc1 write all data in bs, sleep 6s.
-
--proc2 start. Expect read out Z -> A.
-
-0x80000000: Z, expect(Z)
-0x80001000: Y, expect(Y)
-0x80002000: X, expect(X)
-0x80003000: W, expect(W)
-0x80004000: V, expect(V)
-0x80005000: U, expect(U)
-0x80006000: T, expect(T)
-0x80007000: S, expect(S)
-0x80008000: R, expect(R)
-0x80009000: Q, expect(Q)
-0x8000a000: P, expect(P)
-0x8000b000: O, expect(O)
-0x8000c000: N, expect(N)
-0x8000d000: M, expect(M)
-0x8000e000: L, expect(L)
-0x8000f000: K, expect(K)
-0x80010000: J, expect(J)
-0x80011000: I, expect(I)
-0x80012000: H, expect(H)
-0x80013000: G, expect(G)
-0x80014000: F, expect(F)
-0x80015000: E, expect(E)
-0x80016000: D, expect(D)
-0x80017000: C, expect(C)
-0x80018000: B, expect(B)
-0x80019000: A, expect(A)
--proc1 resume.
-
--print directly from bsm.
-
-0x00880000: A, expect(A)
-0x00881000: B, expect(B)
-0x00882000: C, expect(C)
-0x00883000: D, expect(D)
-0x00884000: E, expect(E)
-0x00885000: F, expect(F)
-0x00886000: G, expect(G)
-0x00887000: H, expect(H)
-0x00888000: I, expect(I)
-0x00889000: J, expect(J)
-0x0088a000: K, expect(K)
-0x0088b000: L, expect(L)
-0x0088c000: M, expect(M)
-0x0088d000: N, expect(N)
-0x0088e000: O, expect(O)
-0x0088f000: P, expect(P)
-0x00890000: Q, expect(Q)
-0x00891000: R, expect(R)
-0x00892000: S, expect(S)
-0x00893000: T, expect(T)
-0x00894000: U, expect(U)
-0x00895000: V, expect(V)
-0x00896000: W, expect(W)
-0x00897000: X, expect(X)
-0x00898000: Y, expect(Y)
-0x00899000: Z, expect(Z)
--print from virtual address
-
-0x40000000: A, expect(A)
-0x40001000: B, expect(B)
-0x40002000: C, expect(C)
-0x40003000: D, expect(D)
-0x40004000: E, expect(E)
-0x40005000: F, expect(F)
-0x40006000: G, expect(G)
-0x40007000: H, expect(H)
-0x40008000: I, expect(I)
-0x40009000: J, expect(J)
-0x4000a000: K, expect(K)
-0x4000b000: L, expect(L)
-0x4000c000: M, expect(M)
-0x4000d000: N, expect(N)
-0x4000e000: O, expect(O)
-0x4000f000: P, expect(P)
-0x40010000: Q, expect(Q)
-0x40011000: R, expect(R)
-0x40012000: S, expect(S)
-0x40013000: T, expect(T)
-0x40014000: U, expect(U)
-0x40015000: V, expect(V)
-0x40016000: W, expect(W)
-0x40017000: X, expect(X)
-0x40018000: Y, expect(Y)
-0x40019000: Z, expect(Z)
-
-4: Replacement policy SC test
-test SC policy
-0x40000000: 0
-0x40001000: 1
-0x40002000: 2
-0x40003000: 1003
-0x40004000: 1004
-0x40005000: 1005
-0x40006000: 2006
-0x40007000: 2007
-0x40008000: 2008
-0x40009000: 3009
-0x4000a000: 3010
-0x4000b000: 3011
-8
-0x4000c000: 4012
-0x40001000: 1
-0x40003000: 1003
-0x40005000: 1005
-10
-0x40000000: 0
-12
-0x40002000: 2
-14
-0x40004000: 1004
-0x40001000: 1
-0x4000c000: 4012
-0x4000b000: 3011
-0x4000a000: 3010
-0x40009000: 3009
-0x40008000: 2008
-0x40007000: 2007
-11
-0x40006000: 2006
-0x40005000: 1005
-0x40004000: 1004
-15
-0x40003000: 1003
-0x40002000: 2
-0x40001000: 1
-0x40000000: 0
-
-5: Replacement policy FIFO test
-test FIFO policy
-0x40000000: 0
-0x40001000: 1
-0x40002000: 2
-0x40003000: 1003
-0x40004000: 1004
-0x40005000: 1005
-0x40006000: 2006
-0x40007000: 2007
-0x40008000: 2008
-0x40009000: 3009
-0x4000a000: 3010
-0x4000b000: 3011
-8
-0x4000c000: 4012
-0x40001000: 1
-0x40003000: 1003
-0x40005000: 1005
-9
-0x40000000: 0
-0x40002000: 2
-0x40004000: 1004
-10
-0x40001000: 1
-0x4000c000: 4012
-0x4000b000: 3011
-0x4000a000: 3010
-0x40009000: 3009
-0x40008000: 2008
-0x40007000: 2007
-0x40006000: 2006
-0x40005000: 1005
-0x40004000: 1004
-0x40003000: 1003
-11
-0x40002000: 2
-0x40001000: 1
-0x40000000: 0
-
-6: Frame test
-0x00000000: B
-0x00001000: B
-0x00002000: B
-0x00003000: B
-0x00004000: B
-0x00005000: B
-0x00006000: B
-0x00007000: B
-0x00008000: B
-0x00009000: B
-0x0000a000: B
-0x0000b000: B
-0x0000c000: B
-0x0000d000: B
-0x0000e000: B
-0x0000f000: B
-0x00010000: B
-0x00011000: B
-0x00012000: B
-0x00013000: B
-0x00014000: B
-0x00015000: B
-0x00016000: B
-0x00017000: B
-0x00018000: B
-0x00019000: B
-0x0001a000: B
-0x0001b000: B
-0x0001c000: B
-0x0001d000: B
-0x0001e000: B
-0x0001f000: B
-0x00020000: B
-0x00021000: B
-0x00022000: B
-0x00023000: B
-0x00024000: B
-0x00025000: B
-0x00026000: B
-0x00027000: B
-0x00028000: B
-0x00029000: B
-0x0002a000: B
-0x0002b000: B
-0x0002c000: B
-0x0002d000: B
-0x0002e000: B
-0x0002f000: B
-0x00030000: B
-0x00031000: B
-0x00032000: B
-0x00033000: B
-0x00034000: B
-0x00035000: B
-0x00036000: B
-0x00037000: B
-0x00038000: B
-0x00039000: B
-0x0003a000: B
-0x0003b000: B
-0x0003c000: B
-0x0003d000: B
-0x0003e000: B
-0x0003f000: B
-0x00040000: B
-0x00041000: B
-0x00042000: B
-0x00043000: B
-0x00044000: B
-0x00045000: B
-0x00046000: B
-0x00047000: B
-0x00048000: B
-0x00049000: B
-0x0004a000: B
-0x0004b000: B
-0x0004c000: B
-0x0004d000: B
-0x0004e000: B
-0x0004f000: B
-0x00050000: B
-0x00051000: B
-0x00052000: B
-0x00053000: B
-0x00054000: B
-0x00055000: B
-0x00056000: B
-0x00057000: B
-0x00058000: B
-0x00059000: B
-0x0005a000: B
-0x0005b000: B
-0x0005c000: B
-0x0005d000: B
-0x0005e000: B
-0x0005f000: B
-0x00060000: B
-0x00061000: B
-0x00062000: B
-0x00063000: B
-ALL TEST FINISH!
-
