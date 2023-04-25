@@ -12,4 +12,5 @@ pfintr:
     	   call pfint		/* page fault handling */
     	   popal		/* restore general registers */
     	   popfl		/* restore flag register */
+		   sti			/* re-enable all interrupts */
     	   iret			/* iret */
