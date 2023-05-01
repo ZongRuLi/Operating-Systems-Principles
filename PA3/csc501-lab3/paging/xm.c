@@ -36,7 +36,9 @@ SYSCALL xmmap(int virtpage, bsd_t source, int npages)
 
 	int		param_range_error 		= bad_bs_id || bad_npage || vp_in_physical || vp_overlapped;
 	int		bs_unavailable 			= bs_is_unmapped || bs_map_to_vheap || file_larger_than_bs || bs_already_open_files;
-
+	
+	//lDebug(DBG_INFO, "[INFO][xmmap] npage_max=%d, npage=%d\n",bsm_tab[source].bs_npages_max, npages);
+	
 	if( param_range_error || bs_unavailable )
 	{
   		restore(ps);

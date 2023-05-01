@@ -29,6 +29,7 @@ int get_bs(bsd_t bs_id, unsigned int npages) {
 		return SYSERR;
 	}
 
+	//kprintf("unmap?=%d, max_npage=%d\n",bs_is_unmapped, bsm_tab[bs_id].bs_npages_max);
 	if(bs_is_unmapped)
 	{
 		//bsm_map(currpid, 0, bs_id, npages);// TBD: ??
@@ -36,9 +37,9 @@ int get_bs(bsd_t bs_id, unsigned int npages) {
 		bsm_tab[bs_id].bs_npages_max = npages;
 	}
 	
-	lDebug(DBG_FLOW,"get_bs: npages=%d, bsm_tab.bs_npages=%d", npages, bsm_tab[bs_id].bs_npages[currpid]);
+	lDebug(DBG_FLOW,"get_bs: npages=%d, bsm_tab.bs_npages=%d, bsm_tab.bs_npages_max=%d", npages, bsm_tab[bs_id].bs_npages[currpid], bsm_tab[bs_id].bs_npages_max);
 
 	restore(ps);
-	return bsm_tab[bs_id].bs_npages;
+	return bsm_tab[bs_id].bs_npages_max;
 
 }

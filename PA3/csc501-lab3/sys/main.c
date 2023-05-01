@@ -5,437 +5,362 @@
 #include <proc.h>
 #include <stdio.h>
 #include <paging.h>
-#include <proc.h>
-#include <Debug.h>
 
-#define PROC1_VADDR 0x40000000
-#define PROC1_VPNO 0x40000
-#define PROC2_VADDR 0x80000000
-#define PROC2_VPNO 0x80000
-#define TEST1_BS 1
+void halt();
 
-void print_frame_status(int num){
-	int i;
-	int f_per_line = 4;
-	char mapp;
-	char *type;
-
-	for( i = 0; i< num && i < NFRAMES; i++)
-	{
-		mapp = (frm_tab[i].fr_status == FRM_MAPPED)? 'M' : 'X';
-		type = (frm_tab[i].fr_type == FR_PAGE && mapp == 'M' )? "PG" :
-				(frm_tab[i].fr_type == FR_TBL )? "PT": 
-				(frm_tab[i].fr_type == FR_DIR )? "PD" : "XX";
-		kprintf(" [f%2d,%s,%2d]",i, type, frm_tab[i].fr_pid);
-		if( i % f_per_line == f_per_line -1 ) kprintf("\n");
-	}
-}
-
-void proc0_test0(char *msg, int lck)
-{
-	kprintf("\n- [TEST][0.0] xmmap without get backing store\n");
-	int BSID0 = 14;
-	release_bs( BSID0 );
-
-	if (xmmap(PROC1_VPNO, BSID0, 100) == SYSERR)
-		kprintf("- PASS TEST 0.0 PASS\n");
-	else
-		kprintf("- [ERROR] test 0.0 failed!\n");
-}
-void proc1_test0(char *msg, int lck)
-{
-	kprintf("\n- [TEST][0.1] vgetmem size more than vcreate's hsize\n");
-	
-	if( vgetmem(5000) == SYSERR )
-		kprintf("- PASS TEST 0.2 PASS\n");
-	else
-		kprintf("- [ERROR] test 0.1 failed!\n");
-}
-void proc2_test0(char *msg, int lck)
-{
-	int BSID0 = 14;
-	kprintf("\n- [TEST][0.2] xmmap virtual address to vheap. \n");
-	
-	if( bsm_tab[0].bs_status != BSM_MAPPED ){
-		kprintf("[ERROR] try other bs id\n");
-	}
-	
-	if( get_bs( 0 ,128) != SYSERR ){
-		kprintf("- [ERROR] test 0.2 failed!\n");
-	}	
-	
-	if (xmmap( 4096 , 0 , 100) == SYSERR)
-		kprintf("- PASS TEST 0.2 PASS\n");
-	else
-		kprintf("- [ERROR] test 0.2 failed!\n");
-	
-	release_bs( BSID0 );
-	return;
-}
-void proc3_test0(char *msg, int lck)
-{
-	int BSID0 = 14;
-	int BSID1 = 15;
-
-	kprintf("\n- [TEST][0.3] xmmap overlap previous xmmap \n");
-	get_bs( BSID0 ,128);	
-	get_bs( BSID1 ,128);	
-
-	if (xmmap(PROC1_VPNO, BSID0, 100) == SYSERR)
-	{
-		kprintf("- xmmap call failed\n");
-		sleep(3);
-		return;
-	}
-	if (xmmap(PROC1_VPNO + 50, BSID1, 100) == SYSERR)
-		kprintf("- PASS TEST 0.3 PASS\n");
-	else
-		kprintf("- [ERROR] test 0.3 failed!\n");
-	
-	release_bs( BSID0 );
-	release_bs( BSID1 );
-	return;
-}
-void proc4_test0(char *msg, int lck)
-{
-	kprintf("\n- [TEST][0.4] repeat xmmap - xmunmap after obtain backing store\n");
-	int BSID0 = 14;
-	get_bs( BSID0 , 128 );
-
-	if (xmmap(PROC1_VPNO, BSID0, 100) == SYSERR)
-	{
-		kprintf("- xmmap call failed\n");
-		sleep(3);
-		return;
-	}
-	xmunmap(PROC1_VPNO);
-	if (xmmap(PROC1_VPNO, BSID0, 100) == SYSERR)
-		kprintf("- [ERROR] test 0.4 failed!\n");
-	else
-		kprintf("- PASS TEST 0.4 PASS\n");
-}
-
-void proc1_test1(char *msg, int lck)
-{
-	char *addr;
-	int i;
-
-	get_bs(TEST1_BS, 100);
-
-	if (xmmap(PROC1_VPNO, TEST1_BS, 100) == SYSERR)
-	{
-		kprintf("xmmap call failed\n");
-		sleep(3);
-		return;
-	}
-
-	addr = (char *)PROC1_VADDR;
-	for (i = 0; i < 26; i++)
-	{
-		*(addr + i * NBPG) = 'A' + i;
-	}
-
-	sleep(6);
-
-	for (i = 0; i < 26; i++)
-	{
-		kprintf("0x%08x: %c\n", addr + i * NBPG, *(addr + i * NBPG));
-	}
-
-	xmunmap(PROC1_VPNO);
-	//proc1_test4("tt",0);
-	return;
-}
-
-void proc1_test2(char *msg, int lck)
-{
-	int *x, *y, *z, *w;
-
-	kprintf("- ready to allocate heap space\n");
-	x = vgetmem(1024);
-	kprintf("- heap 1 allocated at %x\n", x);
-	*x = 100;
-	*(x + 1) = 200;
-	kprintf("heap variable: %d %d\n", *x, *(x + 1));
-
-	y = vgetmem(1024);
-	kprintf("- heap 2 allocated at %x\n", y);
-	*y = 300;
-	*(y + 1) = 400;
-	kprintf("heap variable: %d %d\n", *y, *(y + 1));
-	
-	z = vgetmem(1024);
-	kprintf("- heap 3 allocated at %x\n", z);
-	*z = 300;
-	*(z + 1) = 400;
-	kprintf("heap variable: %d %d\n", *z, *(z + 1));
-
-	vfreemem(y, 1024);
-	
-	w = vgetmem(1024);
-	kprintf("- heap 4 allocated at %x\n", w);
-	*w = 300;
-	*(w + 1) = 400;
-	kprintf("heap variable: %d %d\n", *w, *(w + 1));
-	
-	//kprintf("- test freed heap variable(illegal), should page fault & kill process\n");
-
-	//kprintf("illegal heap variable x: %d\n", *x );
-	//kprintf("[ERROR] TEST 2 FAIL!!!!\n");
-
-}
-
-void proc1_test3(char *msg, int lck)
-{
-	char *addr;
-	int i;
-
-	get_bs(TEST1_BS, 100);
-
-	if (xmmap(PROC1_VPNO, TEST1_BS, 100) == SYSERR)
-	{
-		kprintf("xmmap call failed\n");
-		sleep(3);
-		return;
-	}
-
-	addr = (char *)PROC1_VADDR;
-	for (i = 0; i < 26; i++)
-	{
-		kprintf("[proc1_test4] addr = 0x%08x\n",(addr + i * NBPG));
-		*(addr + i * NBPG) = 'Z' - i;
-	}
-	
-	kprintf("-proc1 write all data in bs, sleep 6s.\n\n");
-	//print_frame_status(100);
-	sleep(10);
-
-	kprintf("-proc1 resume.\n\n");
-	//if(debugLevel >= DBG_ERR ){ print_frame_status(20); }
-	
-	kprintf("-print directly from bsm.\n\n");
-	addr = (char*) ( (2048 + TEST1_BS * 128 ) * NBPG );
-	for (i = 0; i < 26; i++)
-	{
-		kprintf("0x%08x: %c, expect(%c)\n", addr + i * NBPG, *(addr + i * NBPG), 'A'+i );	
-	}
-	kprintf("-print from virtual address\n\n");
-	addr = (char *)PROC1_VADDR;
-	for (i = 0; i < 26; i++)
-	{
-		kprintf("0x%08x: %c, expect(%c)\n", addr + i * NBPG, *(addr + i * NBPG), 'A'+i );
-	}
-
-	xmunmap(PROC1_VPNO);
-	return;
-}
-void proc2_test3(char *msg, int lck)
-{
-	char *addr;
-	int i;
-
-	//get_bs(TEST1_BS, 100);
-	//if(debugLevel >= DBG_ERR ){ print_frame_status(20); }
-	kprintf("-proc2 start. Expect read out Z -> A.\n\n");
-
-	if (xmmap(PROC2_VPNO, TEST1_BS, 100) == SYSERR)
-	{
-		kprintf("xmmap call failed\n");
-		sleep(3);
-		return;
-	}
-
-	addr = (char *)PROC2_VADDR;
-	for (i = 0; i < 26; i++)
-	{
-		kprintf("0x%08x: %c, expect(%c)\n", addr + i * NBPG, *(addr + i * NBPG), 'Z'-i );
-		*(addr + i * NBPG) = 'A' + i;
-	}
-
-	//xmunmap(PROC2_VPNO);
-	return;
-}
-
-void proc_replacement_test(int _policy)
-{
-	char* replace_policy;
-	int *addr, *var;
-	int i, temp;
-	int bsid;
-	int total_bsid = 5;
-	int npage = 3;
-	int seq_num = 20;
-	int max_vpno = 12;
-	int vpno_seq[20] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11, 12, 1,3,5, 0, 2, 4, 1};
-		// inserted f :  8, 9,10,11,12,13,14,15,16,17,18,19,  
-		// FIFO replacement policy:
-		// replaced f during wr:							  8, H,H,H, 9, H, H,10
-		// result f:    12, 0, 1, 3, 4, 5, 6, 7, 8, 9,10,11
-		// replaced f during rd: [f11,rd(2)]
-		
-		// SC replacement policy:
-		// inserted f :  8, 9,10,11,12,13,14,15,16,17,18,19,  
-		// replaced f :										  8, H,H,H,10,12,14, H
-		// result f:    12, 1, 0, 3, 2, 4, 6, 7, 8, 9,10,11
-		// replace f during rd: [f11,rd(6)], [f15, rd(3)]
-/*
- * [frame #, frame type, owner process]
- [f 0,PT, 0] [f 1,PT, 0] [f 2,PT, 0] [f 3,PT, 0]
- [f 4,PD, 0] [f 5,PD,49] [f 6,XX,-1] [f 7,XX,-1]
- [f 8,XX,-1] [f 9,XX,-1] [f10,XX,-1] [f11,XX,-1]
- [f12,XX,-1] [f13,XX,-1] [f14,XX,-1] [f15,XX,-1]
- [f16,XX,-1] [f17,XX,-1] [f18,XX,-1] [f19,XX,-1]
- proc(47) will create [f 6,PD,47] [f 7,PT,47], 12 frame left availble.
-*/
-	srpolicy(_policy);
-	
-	if(_policy == FIFO) kprintf("test FIFO policy\n");
-	else if(_policy == SC) kprintf("test SC policy\n");
-	else{ kprintf("[ERROR]test undefined policy!!!!\n");
-		return;
-	}
-
-	for(bsid =0; bsid < total_bsid ; bsid ++ )
-	{
-		get_bs( bsid , 100 );
-
-		if (xmmap(PROC1_VPNO + (npage * bsid), bsid, npage ) == SYSERR)
-		{
-			kprintf("xmmap call failed\n");
-			sleep(3);
-			return;
-		}
-	}
-	addr = (int *)(PROC1_VADDR);
-	for (i = 0; i < seq_num; i++)
-	{
-		var = addr + (vpno_seq[i] * NBPG)/4;
-		*(var) = 1000 * (vpno_seq[i]/npage) + vpno_seq[i];
-		//kprintf("0x%08x: %d\n", var, *(var));
-	}
-	
-	for (i = max_vpno; i >= 0; i--)
-	{
-		var = addr + (i*NBPG)/4;
-		temp = *(var);
-		kprintf("0x%08x: %d\n", var, *(var));
-	}
-	
-	for(bsid =0; bsid < total_bsid ; bsid ++ ){
-		xmunmap(PROC1_VPNO + npage * bsid );
-	}
-	return;
-}
-
-void proc1_test6(char *msg, int lck)
-{
-
-	char *addr;
-	int i;
-	
-	addr = (char *)0x0;
-	for (i = 0; i < 100; i++)
-	{
-		*(addr + i * NBPG) = 'B';
-	}
-
-	for (i = 0; i < 100; i++)
-	{
-		kprintf("0x%08x: %c\n", addr + i * NBPG, *(addr + i * NBPG));
-	}
-
-	return;
-}
 /*------------------------------------------------------------------------
  *  main  --  user main program
  *------------------------------------------------------------------------
  */
-int main(int argc, const char* argv[])
-{
-	kprintf("\n\nHello World, Xinu@QEMU lives\n\n");
-	int pid1;
-	int pid2;
+#define TPASSED 1
+#define TFAILED 0
 
-	//if(debugLevel >= DBG_ERR ){ print_frame_status(100); }
-	kprintf("\n0: illegal use cases\n");
-	pid1 = create(proc0_test0, 2000, 20, "proc0_test0", 0, NULL);
-	resume(pid1);
-	sleep(1);
-	pid1 = vcreate(proc1_test0, 2000, 1, 20, "proc1_test0", 0, NULL);
-	resume(pid1);
-	sleep(1);
-	pid1 = vcreate(proc2_test0, 2000, 100, 20, "proc2_test0", 0, NULL);
-	resume(pid1);
-	sleep(1);
-	pid1 = create(proc3_test0, 2000, 20, "proc3_test0", 0, NULL);
-	resume(pid1);
-	sleep(1);
-	pid1 = create(proc4_test0, 2000, 20, "proc4_test0", 0, NULL);
-	resume(pid1);
-	sleep(1);
+#define MYVADDR1 0x40000000
+#define MYVPNO1 0x40000
+#define MYVADDR2 0x80000000
+#define MYVPNO2 0x80000
+#define MYBS1 1
+#define MAX_BSTORE 16
 
-	kprintf("\n1: shared memory\n");
-	pid1 = create(proc1_test1, 2000, 20, "proc1_test1", 0, NULL);
-	resume(pid1);
-	sleep(10);
-	if(debugLevel >= DBG_ERR ){ print_frame_status(100); }
-	
-	kprintf("\n2: vgetmem/vfreemem\n");
-	pid1 = vcreate(proc1_test2, 2000, 100, 20, "proc1_test2", 0, NULL);
-	kprintf("- pid %d has private heap\n", pid1);
-	resume(pid1);
-	sleep(3);
-	//if(debugLevel >= DBG_ERR )
-	{ print_frame_status(20); }
-	
-	//if(debugLevel >= DBG_ERR ){ print_frame_status(100); }
-
-	kprintf("\n3: shared memory between processes test,\n\
-Expect proc2 read out the same conetent proc1 write into bs.\n");
-	pid1 = create(proc1_test3, 2000, 21, "proc1_test3", 0, NULL);
-	pid2 = create(proc2_test3, 2000, 22, "proc2_test3", 0, NULL);
-	resume(pid1);
-	
-	while(proctab[pid1].pstate != PRSLEEP){
-		kprintf("state=%d\n", proctab[pid1].pstate);
-	};
-	resume(pid2);
-	sleep(10);
-	//if(debugLevel >= DBG_ERR ){ print_frame_status(100); }
-	
-	
-	//force_frame_only_avail(20);
-	// test SC
-	if( NFRAMES == 20 )
-	{
-		
-		kprintf("\n4: Replacement policy SC test\n");
-		pid1 = create(proc_replacement_test, 2000, 20, "proc_replacement_test", 1, SC);
-		resume(pid1);
-		sleep(3);
-		if(debugLevel >= DBG_ERR ){ 
-				print_frame_status(20); 
-				fq_print();
-		}
-		// test FIFO
-		kprintf("\n5: Replacement policy FIFO test\n");
-		//srpolicy(FIFO);
-		pid1 = create(proc_replacement_test, 2000, 20, "proc_replacement_test", 1, FIFO);
-		resume(pid1);
-		sleep(3);
-		if(debugLevel >= DBG_ERR ){ print_frame_status(20); }
+#ifndef NBPG
+#define NBPG 4096
+#endif
+#ifndef MAXNPG
+#define MAXNPG 128
+#endif
+#define assert(x, error) \
+	if (!(x))            \
+	{                    \
+		kprintf(error);  \
+		return;          \
 	}
-		
-	kprintf("\n6: Frame test\n");
-	pid1 = create(proc1_test6, 2000, 20, "proc1_test6", 0, NULL);
-	resume(pid1);
-	sleep(3);
-	
-	kprintf("ALL TEST FINISH!\n");
-	        
-	/* The hook to shutdown QEMU for process-like execution of XINU.
-	 * This API call terminates the QEMU process.
-	 */    
-	shutdown();
+
+
+/*----------------------------------------------------------------*/
+void proc_test2(int i, int j, int *ret, int s)
+{
+	char *addr;
+	int bsize;
+	int r;
+
+	bsize = get_bs(i, 50);
+	kprintf("requested %d, returned %d\n", j, bsize);
+
+	if (bsize != 50)
+	{
+		*ret = TFAILED;
+	}
+	r = xmmap(MYVPNO1, i, j);
+	if (j <= 50 && r == SYSERR)
+	{
+		*ret = TFAILED;
+	}
+	if (j > 50 && r != SYSERR)
+	{
+		*ret = TFAILED;
+	}
+	kprintf("-j=%d, r=%d, ret=%d\n",j,r,*ret);
+	sleep(s);
+	if (r != SYSERR)
+		xmunmap(MYVPNO1);
+	release_bs(i);
+	return;
 }
 
+void test2()
+{
+	int pids[MAX_BSTORE];
+	int mypid;
+	int i, j;
+
+	int ret = TPASSED;
+	kprintf("\nTest 2: Testing backing store operations\n");
+
+	mypid = create(proc_test2, 2000, 20, "proc_test2", 4, 1, 50, &ret, 4);
+	resume(mypid);
+	sleep(2);
+	for (i = 1; i <= 5; i++)
+	{
+		pids[i] = create(proc_test2, 2000, 20, "proc_test2", 4, 1, i * 20, &ret, 0);
+		resume(pids[i]);
+	}
+	sleep(3);
+	kill(mypid);
+	for (i = 1; i <= 5; i++)
+	{
+		kill(pids[i]);
+	}
+	if (ret != TPASSED)
+		kprintf("\tFAILED!\n");
+	else
+		kprintf("\tPASSED!\n");
+}
+
+/*-------------------------------------------------------------------------------------*/
+void test_func7()
+{
+	int PAGE0 = 0x40000;
+	int i, j, temp;
+	int addrs[1200];
+	int cnt = 0;
+	// can go up to  (NFRAMES - 5 frames for null prc - 1pd for main - 1pd + 1pt frames for this proc)
+	// frame for pages will be from 1032-2047
+	int maxpage = (NFRAMES - (5 + 1 + 1 + 1));
+	// int maxpage = (NFRAMES - 25);
+
+	for (i = 0; i <= maxpage / 120; i++)
+	{
+		if (get_bs(i, 120) == SYSERR)
+		{
+			kprintf("get_bs call failed \n");
+			return;
+		}
+		if (xmmap(PAGE0 + i * 120, i, 120) == SYSERR)
+		{
+			kprintf("xmmap call failed\n");
+			return;
+		}
+		for (j = 0; j < 120; j++)
+		{
+			// store the virtual addresses
+			addrs[cnt++] = (PAGE0 + (i * 120) + j) << 12;
+		}
+	}
+
+	/* all of these should generate page fault, no page replacement yet
+	   acquire all free frames, starting from 1032 to 2047, lower frames are acquired first
+	   */
+	for (i = 0; i < maxpage; i++)
+	{
+		*((int *)addrs[i]) = i + 1;
+	}
+
+	// trigger page replacement, this should clear all access bits of all pages
+	// expected output: frame 1032 will be swapped out
+	kprintf("\n\t 7.1 Expected replaced frame: 1032\n\t ");
+	*((int *)addrs[maxpage]) = maxpage + 1;
+	// kprintf("%d", *((int *)addrs[maxpage]));
+	//  int adr1 = (frm_tab[609].fr_vpno * NBPG);
+	//  virt_addr_t vaddress1 = *(virt_addr_t *)&adr1;
+	//  int pg_no1 = vaddress1.pt_offset;
+	//  int pt_no1 = vaddress1.pd_offset;
+	//  pd_t *pde1 = (pd_t *)(proctab[frm_tab[609].fr_pid].pdbr + pt_no1 * sizeof(pd_t));
+	//  pt_t *pte1 = (pt_t *)(pde1->pd_base * NBPG + pg_no1 * sizeof(pt_t));
+	for (i = 1; i <= maxpage; i++)
+	{
+		// kprintf("%d\n",pte1->pt_acc);
+		if ((i != 600) && (i != 800)) // reset access bits of all pages except these
+			*((int *)addrs[i]) = i + 1;
+	}
+	// kprintf("\n%d\n", *((int *)addrs[601]));
+	// Expected page to be swapped: 1032+600 = 1632
+	kprintf("\n\t 7.2 Expected replaced frame: 1632\n\t");
+	*((int *)addrs[maxpage + 1]) = maxpage + 2;
+	temp = *((int *)addrs[maxpage + 1]);
+	if (temp != maxpage + 2)
+		kprintf("\tFAILED!\n");
+
+	kprintf("\n\t 7.3 Expected replaced frame: 1832\n\t");
+	*((int *)addrs[maxpage + 2]) = maxpage + 3;
+	temp = *((int *)addrs[maxpage + 2]);
+	if (temp != maxpage + 3)
+		kprintf("\tFAILED!\n");
+
+	for (i = 0; i <= maxpage / 120; i++)
+	{
+		xmunmap(PAGE0 + (i * 120));
+		release_bs(i);
+	}
+}
+void test7()
+{
+	int pid1;
+	int ret = TPASSED;
+
+	kprintf("\nTest 7: Test SC page replacement policy\n");
+	srpolicy(SC);
+	pid1 = create(test_func7, 2000, 20, "test_func7", 0, NULL);
+
+	resume(pid1);
+	sleep(13);
+	kill(pid1);
+
+	pid1 = create(test_func7, 2000, 20, "test_func7", 0, NULL);
+	resume(pid1);
+	sleep(13);
+	kill(pid1);
+
+	kprintf("\n\t Finished! Check error and replaced frames\n");
+}
+
+// LFU/FIFO
+/*-------------------------------------------------------------------------------------*/
+void test_func8()
+{
+	STATWORD ps;
+	int PAGE0 = 0x40000;
+	int i, j, temp = 0;
+	int addrs[1200];
+	int cnt = 0;
+
+	// can go up to  (NFRAMES - 5 frames for null prc - 1pd for main - 1pd + 1pt frames for this proc)
+	int maxpage = (NFRAMES - (5 + 1 + 1 + 1)); //=1016
+											   // int maxpage = (NFRAMES - 25);
+
+	for (i = 0; i <= maxpage / 120; i++)
+	{
+		if (get_bs(i, 120) == SYSERR)
+		{
+			kprintf("get_bs call failed \n");
+			return;
+		}
+		if (xmmap(PAGE0 + i * 120, i, 120) == SYSERR)
+		{
+			kprintf("xmmap call failed\n");
+			return;
+		}
+		for (j = 0; j < 120; j++)
+		{
+			// store the virtual addresses
+			addrs[cnt++] = (PAGE0 + (i * 120) + j) << 12;
+		}
+	}
+
+	/* all of these should generate page fault, no page replacement yet
+	   acquire all free frames, starting from 1032 to 2047, lower frames are acquired first
+	   */
+	for (i = 0; i < maxpage; i++)
+	{
+		*((int *)addrs[i]) = i + 1; // bring all pages in, only referece bits are set
+	}
+
+	// LFU counter would not be cleared
+	// sleep(3); //after sleep, all reference bits should be cleared
+
+	disable(ps); // reduce the possibility of trigger reference bit clearing routine while testing
+
+	// trigger page replacement
+	// reference pages are replaced backwards from highest vpno
+	// from 2047 to 1032 + maxpage/2 = 1540
+	// dont show numerous frame output - optimization may mess with order
+	// debug_page_replace_policy = NOPRINTFRM;
+	for (i = maxpage; i > (maxpage / 2) + 1; i--)
+	{
+		*((int *)addrs[i]) = i + 1; // set both ref bits and dirty bits for these pages
+		/*
+		kprintf("in: \t%8x\n", addrs[i]);
+		temp = *((int *)addrs[i]);
+		if (temp != i + 1)
+			kprintf("\tFAILED!\n");
+		//*/
+	}
+
+	kprintf("\t 8.1 Expected replaced frame: %d\n\t", 1032 + maxpage / 2);
+	enable(ps); // to allow page fault
+	// allow frame output
+	// debug_page_replace_policy = PRINTFRM;
+	// trigger page replace ment, expected output: frame 1032+maxpage/2=1540 will be swapped out
+	// this test might have a different result (with very very low possibility) if bit clearing routine is called before executing the following instruction
+	*((int *)addrs[maxpage / 2 + 1]) = maxpage + 1;
+	// kprintf("in: \t%8x\n", addrs[maxpage/2 + 1]);
+	temp = *((int *)addrs[maxpage / 2 + 1]);
+	if (temp != maxpage + 1)
+		kprintf("\tFAILED!\n");
+
+	// LFU counter would not be cleared but delay output
+	// sleep(3); //after sleep, all reference bits should be cleared
+
+	disable(ps); // reduce the possibility of trigger reference bit clearing routine while testing
+
+	/*
+	for(i=0; i < maxpage; i++)
+	{
+			*((int *)addrs[i]) = i + 1; //set both ref bits and dirty bits for these pages
+
+	}
+	//*/
+
+	// continue replacement
+	// from 1032 + maxpage/2 to 1032 + maxpage/2 = 1540
+	// dont show numerous frame output - optimization may mess with order
+	// debug_page_replace_policy = NOPRINTFRM;
+	for (i = maxpage / 2; i > 1; i--)
+	{
+		*((int *)addrs[i]) = i + 1; // set both ref bits and dirty bits for these pages
+		/*
+		kprintf("in: \t%8x\n", addrs[i]);
+		temp = *((int *)addrs[i]);
+		if (temp != i + 1)
+			kprintf("\tFAILED!\n");
+		//*/
+	}
+
+	// kprintf("\t 8.2 Expected replaced frame: %d\n\t",1032+maxpage/3);
+	kprintf("\t 8.2 Expected replaced frame: %d\n\t", 2047);
+	enable(ps); // to allow page fault
+	// allow frame output
+	// debug_page_replace_policy = PRINTFRM;
+	// trigger page replace ment, expected output: frame 1032+maxpage/3=1370 will be swapped out
+	// this test might have a different result (with very very low possibility) if bit clearing routine is called before executing the following instruction
+	*((int *)addrs[1]) = maxpage + 2;
+	temp = *((int *)addrs[1]);
+	if (temp != maxpage + 2)
+		kprintf("\tFAILED!\n");
+
+	/*
+	// dont show numerous frame output - optimization may mess with order
+	// debug_page_replace_policy = NOPRINTFRM;
+	// replace remaining to even counts for next test
+	for(i=maxpage/3; i > 0; i--)
+	{
+			*((int *)addrs[i]) = i + 1; //set both ref bits and dirty bits for these pages
+
+	}
+	kprintf("\tleave testfunc \n");
+	//*/
+
+	for (i = 0; i <= maxpage / 120; i++)
+	{
+		xmunmap(PAGE0 + (i * 120));
+		release_bs(i);
+	}
+}
+
+void test8()
+{
+	int pid1;
+
+	kprintf("\nTest 8: Test FIFO page replacement policy\n");
+	srpolicy(FIFO); // LFU
+	kprintf("\n\t First run:\n");
+	pid1 = create(test_func8, 2000, 20, "test_func8", 0, NULL);
+	resume(pid1);
+	sleep(15);
+	kill(pid1);
+
+	///*
+	kprintf("\n\t Second run (test where killing process is handled correctly):\n");
+	pid1 = create(test_func8, 2000, 20, "test_func8", 0, NULL);
+	resume(pid1);
+	sleep(15);
+	kill(pid1);
+	//*/
+
+	kprintf("\n\t Finished! Check error and replaced frames\n");
+}
+
+int main()
+{
+	int i, s;
+	char buf[8];
+
+	kprintf("\n\nHello World, Xinu lives\n\n");
+
+	test2();
+
+	test7();
+
+	test8();
+
+	shutdown();
+}
