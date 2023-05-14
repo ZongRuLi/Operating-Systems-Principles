@@ -5,7 +5,7 @@ CC	= /usr/bin/gcc
 LEX	= /usr/bin/flex
 YACC	= /usr/bin/bison -y     # Flag enables yacc-compatible filenames
 DEFS	=
-CFLAGS	= -m32 -march=i586 ${DEFS}
+CFLAGS	= -m32 -march=i586 ${DEFS} -fno-stack-protector
 LFLAGS	= -lfl
 
 all:		config

@@ -5,8 +5,8 @@
 #include <proc.h>
 #include <stdio.h>
 
-static unsigned long	*esp;
-static unsigned long	*ebp;
+static unsigned long	__attribute__((used)) *esp;
+static unsigned long	__attribute__((used)) *ebp;
 
 #define STKDETAIL
 

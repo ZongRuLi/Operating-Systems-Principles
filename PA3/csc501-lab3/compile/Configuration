@@ -43,3 +43,5 @@ TTY2		is tty		on HARDWARE
 #define	MEMMARK				/* define if memory marking used*/
 #define	RTCLOCK				/* now have RTC support		*/
 #define	STKCHK				/* resched checks stack overflow*/
+
+#define NFRAMES 	1024	/* number of frames		*/

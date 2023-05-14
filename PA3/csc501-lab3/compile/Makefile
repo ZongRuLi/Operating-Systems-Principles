@@ -3,12 +3,12 @@
 #
 
 INCLUDE = -I../h
-CFLAGS  = -m32 -march=i586 -fno-builtin -c -Wall -O ${DEFS} ${INCLUDE}
+CFLAGS  = -m32 -march=i586 -fno-builtin -c -Wall -O ${DEFS} ${INCLUDE} -fno-stack-protector
 SDEFS	= -I../h
 ASFLAGS = --32
 
-CC      =       /usr/bin/gcc
-cPP     =       /usr/bin/gcc -E
+CC      =       /usr/bin/gcc 
+cPP     =       /usr/bin/gcc -E 
 AS      =       /usr/bin/as
 LD      =       /usr/bin/ld
 MAKETD  =	/usr/X11R6/bin/makedepend
