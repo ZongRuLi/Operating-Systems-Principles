@@ -1,4 +1,4 @@
-# CSC501
+# Operating Systems Principles
 
 ## PA 0: Getting Acquainted with XINU
 pass all
