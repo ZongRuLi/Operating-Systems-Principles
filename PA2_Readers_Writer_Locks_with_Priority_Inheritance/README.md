@@ -60,6 +60,7 @@ wait with OK.<br>
 You must implement your lock system such that waiting on a lock will return a new constant DELETED instead of OK when
 returning due to a deleted lock. This will indicate to the user that the lock was deleted and not unlocked. As before, any
 calls to lock() after the lock is deleted should return SYSERR.<br>
+
 There is also another subtle but important point to note. Consider the following scenario. Let us say that there are three
 processes A, B, and C. Let A create a lock with descriptor=X. Let A and B use X to synchronize among themselves. Now,
 let us assume that A deletes the lock X. But B does not know about that. If, now, C tries to create a lock, there is a chance 
