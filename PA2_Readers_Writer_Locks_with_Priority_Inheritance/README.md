@@ -143,17 +143,17 @@ implementation as long as the functionality is correct.<br>
 You can maintain the following information:<br>
 
 \> Inside the process table entry:<br>
-a)Theoriginal priority (pprio) with which a process is created.
+a)Theoriginal priority (pprio) with which a process is created.<br>
 b) pinh – The current inherited priority of the process. This value can be 0 when the process is running with its original
-priority.
-c) A bit mask or a linked list through which all the locks held by the process can be found.
+priority.<br>
+c) A bit mask or a linked list through which all the locks held by the process can be found.<br>
 d) An integer value lockid indicating the lock descriptor in whose wait queue the process is blocked. It can take the
 value-1 when the process is not blocked inside any wait queue. Note that a process can be only inside a single wait
-queue at a time.
+queue at a time.<br>
 
 \>  Inside the lock descriptor table entry.<br>
-a) A priority field (lprio) indicating the maximum priority among all the processes waiting in the lock’s wait queue.
-b) A linked list/bitmask of the process ids of the processes currently holding the lock.
+a) A priority field (lprio) indicating the maximum priority among all the processes waiting in the lock’s wait queue.<br>
+b) A linked list/bitmask of the process ids of the processes currently holding the lock.<br>
 
 The actions to be performed in the following situations are:<br>
 
@@ -177,9 +177,9 @@ You are provided with a code example in the file test_main.c (https://moodlecour
 Write your answers to the following questions in a file named Lab2Answers.txt(in simple text).<br>
 Please place this file in the TMP/ directory and turn it in, along with the above programming assignment.<br>
 1. The priority inversion problem could cause that a higher-priority process needs to wait for the completion of a lowerpriority process.
-1. Priority inheritance is one approach to address this issue. Please give another approach and briefly describe
+1.1 Priority inheritance is one approach to address this issue. Please give another approach and briefly describe
 its idea.
-2. Design a test case to show that your approach can address the priority inversion problem. You should
+1.2. Design a test case to show that your approach can address the priority inversion problem. You should
 compare the results that derived from the original XINU implementation (use semaphore) and that derived
 from your implementation (use readers/writer locks). Put your results in Lab2Answers.txt and your test case
 program (name it task1.c) in both ./sys and ./TMP
