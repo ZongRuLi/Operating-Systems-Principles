@@ -175,9 +175,9 @@ To solve the problem, you need to keep track of which backing store is allocated
 Then, a particular page to write/read from can be calculated using its virtual page number within the related store. You may
 need to declare a new kernel data structure which maps virtual address spaces to backing store descriptors.We will call
 this the backing store map. It should be a tuple like:<br>
-> { pid, vpage, npages, store }
+> { pid, vpage, npages, store }<br>
 You should write a function that performs the lookup:<br>
-> f (pid , vaddr)= > {store, pageoffset within store}
+> f (pid , vaddr)= > {store, pageoffset within store}<br>
 The function xmmap() will add a mapping to this table. xmunmap() will remove a mapping from this table.<br>
 
 #### 4.2.2 Inverted PageTable
@@ -185,7 +185,7 @@ When writing out a dirty page you may notice the only way to figure out which vi
 backing store) a dirty frame belongs to would be to traverse the page tables of every process looking for a frame location
 that corresponds to the frame we wish to write out. This is highly inefficient. To prevent this, we use another kernel data
 structure, an inverted page table. The inverted page table contains tuples like:<br>
-> { frame number, pid, virtual page number }
+> { frame number, pid, virtual page number }<br>
 Of course, if we use an array of size NFRAMES, the frame number is implicit and just the index into the array.With this
 structure we can easily find the pid and virtual page number of the page held within any frame i. From that we can easily
 find the backing store (using the backing store map) and compute which page within the backing store corresponds with
