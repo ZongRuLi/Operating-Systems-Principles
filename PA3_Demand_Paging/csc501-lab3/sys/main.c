@@ -356,6 +356,7 @@ int main()
 
 	kprintf("\n\nHello World, Xinu lives\n\n");
 
+	kprintf("nframes: %d\n", NFRAMES);
 	test2();
 
 	test7();

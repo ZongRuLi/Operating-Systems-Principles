@@ -64,7 +64,7 @@ SYSCALL get_frm(int* avail)
 		return SYSERR;
 	}
 	//if(print_replace){ lDebug(0,"[get_frm] replace frame (%d)", fid); }
-	if(print_replace){ kprintf("%d\n",fid); }
+	if(print_replace){ kprintf("%d\n",FRAME0 + fid); }
 
 	//if( debugLevel >= DBG_INFO ){ fq_print(); }
 
