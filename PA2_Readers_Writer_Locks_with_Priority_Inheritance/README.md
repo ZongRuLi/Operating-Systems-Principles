@@ -176,13 +176,15 @@ You are provided with a code example in the file test_main.c (https://moodlecour
 ## 4. Additional Tasks
 Write your answers to the following questions in a file named Lab2Answers.txt(in simple text).<br>
 Please place this file in the TMP/ directory and turn it in, along with the above programming assignment.<br>
-1. The priority inversion problem could cause that a higher-priority process needs to wait for the completion of a lowerpriority process.
+
+1. The priority inversion problem could cause that a higher-priority process needs to wait for the completion of a lowerpriority process.<br>
 1.1 Priority inheritance is one approach to address this issue. Please give another approach and briefly describe
-its idea.
+its idea.<br>
 1.2. Design a test case to show that your approach can address the priority inversion problem. You should
 compare the results that derived from the original XINU implementation (use semaphore) and that derived
 from your implementation (use readers/writer locks). Put your results in Lab2Answers.txt and your test case
 program (name it task1.c) in both ./sys and ./TMP
+
 2. Synchronization is a quite complex issue in operating systems. To show your understanding about process
 synchronization, you are asked to point out a potential problem in this pesudo-code: task2_sync_issue.c
 (https://moodlecourses2223.wolfware.ncsu.edu/pluginfile.php/1237269/mod_assign/introattachment/0/task2_sync_issue.c?
