@@ -282,11 +282,11 @@ process.
 6. Let q be the bits [21:12] of a. [What does q represent?]
 7. Let pt point to the p-th page table. If the p-th page table does not exist, obtain a frame for it and initialize it.
 8. To page in the faulted page do the following:
-1. Using the backing store map, find the store s and page offset o which correspond to vp.
-2. In the inverted page table, increase the reference count of the frame that holds pt. This indicates that one
+	1. Using the backing store map, find the store s and page offset o which correspond to vp.
+	2. In the inverted page table, increase the reference count of the frame that holds pt. This indicates that one
 more of pt’s entries is marked as “present.”
-3. Obtain a free frame, f.
-4. Copy the page o store s to f.
-5. Update pt to mark the appropriate entry as present and set any other fields. Also set the address portion
+	3. Obtain a free frame, f.
+	4. Copy the page o store s to f.
+	5. Update pt to mark the appropriate entry as present and set any other fields. Also set the address portion
 within the entry to point to frame f.
 
