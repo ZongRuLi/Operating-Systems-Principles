@@ -246,4 +246,47 @@ page tables.
 6. Install the page fault interrupt service routine.
 7. Enable paging.
 
+### 4.4 The Interrupt Service Routine (ISR)
+As you know, a page fault triggers an interrupt 14.When an interrupt occurs the machine pushes CS:IP and then an error
+code (see Intel Volume III chapter 5)<br>
+
+<p align=center>
+———- <br>
+error code <br>
+———- <br>
+IP <br>
+———- <br>
+CS <br>
+———- <br>
+… <br>
+…<br>
+</p>
+
+It then jumps to a predetermined point, the ISR. To specify the ISR we use the routine:<br>
+
+set_evec(int interrupt, (void (*isr)(void))) (see evec.c)<br>
+
+### 4.5 Faults and Replacement Policies
+
+#### 4.5.1 Page Faults
+A page fault indicates one of two things: the virtual page on which the faulted address exists is not present or the page
+table which contains the entry for the page on which the faulted address exists is not present. To deal with a page fault you
+must do the following:<br>
+
+1. Get the faulted address a.
+2. Let vp be the virtual page number of the page containing the faulted address.
+3. Let pd point to the current page directory.
+4. Check that a is a legal address (i.e. that it has been mapped in pd). If it is not, print an error message and kill the
+process.
+5. Let p be the upper ten bits of a. [What does p represent?]
+6. Let q be the bits [21:12] of a. [What does q represent?]
+7. Let pt point to the p-th page table. If the p-th page table does not exist, obtain a frame for it and initialize it.
+8. To page in the faulted page do the following:
+1. Using the backing store map, find the store s and page offset o which correspond to vp.
+2. In the inverted page table, increase the reference count of the frame that holds pt. This indicates that one
+more of pt’s entries is marked as “present.”
+3. Obtain a free frame, f.
+4. Copy the page o store s to f.
+5. Update pt to mark the appropriate entry as present and set any other fields. Also set the address portion
+within the entry to point to frame f.
 
