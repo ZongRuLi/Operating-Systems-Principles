@@ -290,3 +290,165 @@ more of pt’s entries is marked as “present.”
 	5. Update pt to mark the appropriate entry as present and set any other fields. Also set the address portion
 within the entry to point to frame f.
 
+#### 4.5.2 Obtaining a Free Frame
+When a free frame is needed, it may be necessary to remove a resident page from frame. How you pick the page to
+remove depends on your page replacement policy,<br>
+
+Your function to find a free page should do the following:<br>
+
+1. Search inverted page table for an empty frame. If one exists stop.
+2. Else, Pick a page to replace.
+3. Using the inverted page table, get vp, the virtual page number of the page to be replaced.
+4. Let a be vp*4096 (the first virtual address on page vp).
+5. Let p be the high 10 bits of a. Let q be bits [21:12] of a.
+6. Let pid be the pid of the process owning vp.
+7. Let pd point to the page directory of process pid.
+8. Let pt point to the pid’s p-th page table.
+9. Mark the appropriate entry of pt as not present.
+10. If the page being removed belongs to the current process, invalidate the TLB entry for the page vp using the invlpg
+instruction (see Intel Volume III/II).
+11. In the inverted page table decrement the reference count of the frame occupied by pt. If the reference count has
+reached zero, you should mark the appropriate entry in pd as being not present. This conserves frames by keeping
+only page tables which are necessary.
+12. If the dirty bit for page vp was set in its page table you must do the following:
+	1. Use the backing store map to find the store and page offset within store given pid and a. If the lookup fails,
+something is wrong. Print an error message and kill the process pid.
+	2. Write the page back to the backing store.
+
+#### 4.5.3 Page Replacement Policies
+You must implement two page replacement algorithms: SC (default) and FIFO.<br>
+
+For SC, when a frame is allocated for a page, you insert the frame into a circular queue.When a page replacement
+occurs, SC first looks at the current position in the queue (current position starts from the head of the queue), checks to
+see whether its reference bit is set (i.e., pt_acc = 1). If it is not set, the page is swapped out. Otherwise, the reference bit
+is cleared, the current position moves to the next page and this process is repeated. If all the pages have their reference
+bits set, on the second encounter, the page will be swapped out, as it now has its reference bit cleared.<br>
+
+For FIFO algorithm, you need to ensure that the page that was allocated first in the main memory is the one that gets
+replaced first when a victim page is needed. You need to keep track of when each page has been brought into the memory
+which would give you the needed information while evicting a page.<br>
+
+Default page replacement policy should be SC; srpolicy(FIFO) will be called in main() to switch the replacement policy
+from SC to FIFO.When srpolicy(SC) or srpolicy(FIFO) is called, your program should turn on a debugging option, so that
+when replacements occur, it will print ONLY the replaced frame numbers (not addresses) for grading.<br>
+
+Note that you are free to add whatever structures you’d like in your inverted page table.<br>
+
+## 5. Required API Calls
+You must implement the system calls listed in the beginning of this handout exactly as specified. Be sure to check the
+parameters for validity. For example, no process should be allowed to remap the lowest 16 MB of the system (global
+memory).<br>
+
+None of Xinu’s other system call interfaces should be modified.<br>
+
+## 6. Details on Intel Architecture and Xinu
+After having read chapters two and three in volume 3 (http://www.intel.com/design/pentiumii/manuals/243192.htm) you
+should have a basic understanding of the details of memory management in the Intel architecture.<br>
+
+The following might be useful for you to know:<br>
+1. We are using the Intel Pentium chip, not the Pentium Pro or Pentium II. Some details of those chips do not apply.
+2. Xinu uses the flat memory model, i.e. physical address = linear addresses.
+3. The segments are set in i386.c in the function setsegs().
+4. Pages are 4k (4096 bytes) in size. Do not use 2M or 4M page size
+5. The backend machines have 16 MB (4096 pages) of real memory.
+
+Some example code is given in the project directory for getting and setting the control registers. A useful
+function, dump32 (unsigned long), for dumping a binary number with labelled bits is also given.
+
+## 7. Code Framework
+In this lab, we will use another version of Xinu that can be downloaded in the following link: csc501-lab3.tgz
+(https://moodle-courses2223.wolfware.ncsu.edu/pluginfile.php/1237270/mod_assign/introattachment/0/csc501-lab3.tgz?
+forcedownload=1). This version of Xinu contains the skeleton code for the backing store calls. It also has .h files needed for
+this project. Here are a test file testmain.c (https://moodlecourses2223.wolfware.ncsu.edu/pluginfile.php/1237270/mod_assign/introattachment/0/testmain.c?forcedownload=1) and
+its sample output (https://moodlecourses2223.wolfware.ncsu.edu/pluginfile.php/1237270/mod_assign/introattachment/0/sample_output.txt?
+forcedownload=1).
+
+## 8. Debugging
+Please try to debug by yourself first. Also realize that you know your program best.<br>
+
+Furthermore, if it helps you, you can uncomment the #define’s in evec.c to get a stack trace and register dump. Using this
+and nm on the file xinu.elf can help you locate where your program crashed. Or you may recompile everything using the
+compiler’s -g flag, disassemble xinu.elf using objdump-d xinu.elf > xinu.dis, load xinu.dis into your text editor and search for
+the return address in the stack. In the disassembly the addresses are the numbers on the left (e.g. ab3e:). This will show
+you the function name (may be some lines above) of the function the crash occurred in and (if you compiled that particular
+file with-g) the C line number in the []’s.<br>
+
+The most difficult problem to diagnose is when the machine simply reboots itself. This is usually the result of having a bad
+stack pointer. In such a case the machine cannot give a trap.<br>
+
+## FAQs:
+1) How do I get the virtual page number from a virtual address?<br>
+
+The most significant 20 bits of a virtual address form the virtual page number.<br>
+
+2) About the mapping < pid, vpage, npages, store ><br>
+
+This mapping is maintained inside the kernel. Since the “store” can take only 16 values at the most (because there are
+only 16 backing stores possible for any user), and no store can be mapped to more than one range of virtual memory at any
+time, the table that contains these mappings will contain only 16 entries. This table is placed in the kernel data segment in
+the first 25 pages of the physical memory. You need not take any extra care about placing this table. Just create an array of
+16 entries of the type of the mapping and that’s all. It is pretty similar to semaph[] and proctab[].<br>
+
+3) srpolicy()<br>
+
+This system call will not be called at arbitrary places inside your code to force changing from one replacement policy to
+another. You can assume that the default policy is SC. srpolicy(FIFO), if called, will be the first statement in the program.
+So, need not worry about switching from one replacement policy to another midway through the execution.<br>
+
+4) Paging.h contains two structures pd_t and pt_t which contains a lot of bit fields. Initially which fields should be
+set in a page directory and a page table?<br>
+
+For page directories, set the following bits and make the other bits zero : pd_write always and pd_pres whenever the
+corresponding page tables are present in the main memory.<br>
+For the four global page tables, set the following bits: pt_pres and pt_write. You can make others zero.<br>
+(This answer should be fairly obvious if you have read the Intel manuals carefully.)<br>
+
+5) Where do we place the page tables and page directories?<br>
+
+If your memory is divided into 4096 pages, page tables and page directories should be placed in the range 1024-2047. They
+should be placed on page boundaries only, i.e., the starting address of any page table or page directory should be divisible
+by the size of the pages NBPG.<br>
+
+6) What is the use of xmmap()?<br>
+
+There was a big misconception about the usage of xmmap() among many previous students.When does a user process
+call xmmap()? Why is it used for?<br>
+
+Even though xmmap() is given in the first page of your handout, it is not the most important system call that you should
+implement. Also, it is not main part of the project. Also, it is not the only way by which you can access virtual memory and
+test your implementation.<br>
+
+Then, how else can a process try to use virtual memory? Here is one example. This example shows how to access virtual
+memory, and when a page fault could happen.<br>
+
+
+
+
+7) Page fault handling routine (page fault ISR) – What should be done here?<br>
+
+Psuedo code for the implementation (which would be easier if you do it in assembly)<br>
+
+1) store error code in a global variable
+2) store flag register
+3) clear all interrupts
+4) save all general registers
+5) page fault handling
+6) restore general registers
+7) restore flag register
+8) iret
+
+If you have not written in assembly language before, look at some code written in assembly in xinu itself. Or else,
+disassemble some simple C code and check the assembly code. Note that not everything has to be implemented in
+assembly as it would be very difficult. Thus, you could include a call to a C function which handles 5).<br>
+
+8) Are read_bs and write_bs blocking calls and can they be used inside our interrupt handling routine?<br>
+
+They are, and can be used inside the page fault handling routine.<br>
+
+9) How do I test replacement policies?<br>
+
+There is a constant NFRAMES in paging.h. Its default value is 1024. Make sure that your entire code depends on this
+constant as a measure of the available free frames. If we change the constant value to say 400, then the number of free
+frames initially available is only 400, i.e., your main memory looks as if it has only 1024 + NFRAMES = 1024 + 400 = 1424
+frames of memory. So, you have an ample scope to test your replacement policy by changing NFRAMES.<br>
+
