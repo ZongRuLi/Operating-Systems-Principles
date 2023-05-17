@@ -421,8 +421,64 @@ test your implementation.<br>
 Then, how else can a process try to use virtual memory? Here is one example. This example shows how to access virtual
 memory, and when a page fault could happen.<br>
 
+```
+main()
+{
+vcreate(process A, , , hsize = 100, ,,,); /* process A is created with a virtual heap of 100 pages */
+}
 
+process A()
+{
+int *x;
+int temp;
+x = vgetmem(1000); /* allocates some memory in the virtual heap which is in virtual memory */
+/* the following statement will cause a page fault. The page fault handling routing will read in the required page from
+backing store into the main memory, set the proper page tables and the page directory entries and reexecute the
+statement. */
+*x = 100;
+x++;
+*x = 200;
+temp = *x; /* You are reading back from the virtual heap to check if the previous write was successful */
+vfreemem(–x, 1000); /* frees the allocation in the virtual heap */
+}
+```
 
+The virtual heap in the example is present in a backing store that is exclusive for the process alone (no backing store
+should be shared across processes; neither should the same backing store be mapped to multiple memory ranges). The
+heap is mapped in the address range of 4096th page to 4196th page of the process. So, the backing store mapping table
+should contain an entry < process A’s pid, 4096, 100, backing store number >.<br>
+
+Then, why do we need xmmap() and what does it do? xmmap() is very similar to mmap() of Unix. It treats the backing
+stores as “files.” One potential usage of xmmap() is as follows:<br>
+```
+Process A:
+char *x;
+char temp;
+get_bs(4, 100);
+xmmap(7000, 4, 100); /* This call simply creates an entry in the backing store mapping */
+x = 7000*4096;
+*x = ‘Y’; /* write into virtual memory, will create a fault and system should proceed as in the prev example
+*/
+temp = *x; /* read back and check */
+xmunmap(…);
+```
+It can be thought of as you create a file, whose name is “4”. It is a big empty file of size 100 pages. You store a character ‘A’
+as the first character in the file. However, instead of using file I/O operations, you modify the file by means of a memory
+modification, as you have mapped the file to a memory location.<br>
+
+Let us say there is another process B which executes the following code after process A writes to its virtual memory
+mapped by xmmap.<br>
+
+```
+Process B:
+char *x;
+char temp_b;
+xmmap(6000, 4, 100);
+x = 6000 * 4096;
+temp_b = *x: /* Surprise: Now, temp_b will get the value ‘Y’ written by the process A to this backing store ‘4’ */
+```
+
+These examples should make the usage of xmmap() more clear. Think about it.<br>
 
 7) Page fault handling routine (page fault ISR) – What should be done here?<br>
 
